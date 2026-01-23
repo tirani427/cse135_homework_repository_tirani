@@ -21,8 +21,10 @@ Tia Irani
    - In order to use the workflow I wanted to, I set up 4 repository secrets:
      1. `DO_HOST` &rarr; contained the IP address for DigitalOcean droplet
      2. `DO_USER` &rarr; SSH user on droplet
-     3. `DO_PATH` &rarr; contained the DocumentRoot
-     4. `DO_SSH_KEY` &rarr; contained private ssh key for deployment 
+     3. `DO_PATH` &rarr; contained the DocumentRoot for cse135tirani.site
+     4. `DO_COLLECTOR` &rarr; contained the DocumentRoot for collector.cse135tirani.site
+     5. `DO_REPORTING` &rarr; contained the DocumentRoot for reporting.cse135tirani.site
+     6. `DO_SSH_KEY` &rarr; contained private ssh key for deployment 
 5. Github Actions Workflow
    - Workflow file was added at .github/workflows/deploy.yml
      - Workflow:
