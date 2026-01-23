@@ -60,3 +60,6 @@ Changes appear live on website
 ### Login / Password Protection
 User: tiairani, Password:  n3v3rg0nN@l3ty0ud0wn
 User: grader, Password: n3v3rg0nN@tUrN@r0unD&d3s3rTy0u
+
+### Compression 
+Completing this part of the assignment involved enabling Apache's `mod_deflate` and configuring it to gzip-compress text-based responses. Once compression was enabled and Apache reloaded, Chrome DevTools Network showed that the responses returned with `Content-Encoding: gzip`. The "Size" field also indicated a smaller transferred payload compared to resource size - which confirms the browser received the compressed version and decompressed it automatically for rendering. 
