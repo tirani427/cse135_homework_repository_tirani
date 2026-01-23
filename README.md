@@ -63,3 +63,6 @@ User: grader, Password: n3v3rg0nN@tUrN@r0unD&d3s3rTy0u
 
 ### Compression 
 Completing this part of the assignment involved enabling Apache's `mod_deflate` and configuring it to gzip-compress text-based responses. Once compression was enabled and Apache reloaded, Chrome DevTools Network showed that the responses returned with `Content-Encoding: gzip`. The "Size" field also indicated a smaller transferred payload compared to resource size - which confirms the browser received the compressed version and decompressed it automatically for rendering. 
+
+### Obscure Server Identity
+In order to accomplish this part of the assignment, I used ServerToken, ServerSignature, and SecServerSignature, the latter coming from installing Apache's mod-security2. My first strategy was setting ServerToken Prod and ServerSignature Off, and having the condition that `Header always Set Server "CSE135 Server`. However, this only resulted in `Server: Apache` - shorter than before but not changed. So I did more research into methods of hiding the server identity and found mod-security2, which discussed setting the new server name with SecServerSignature. One source recommended setting `ServerTokens Full` so I changed my implementation to attempt it that way. I included `SecServerSignature "CSE135 Server"` in the security.conf file, which worked in the end to hide the server identity.
