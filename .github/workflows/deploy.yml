@@ -23,7 +23,9 @@ jobs:
 
       - name: Deploy with rsync over SSH
         run: |
-          rsync -av --delete \
-            --exclude ".git/" \
-            --exclude ".github/" \
-            ./ ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_PATH }}/
+          for target in "${{ secrets.DO_PATH }}" "${{ secrets.DO_COLLECTOR }}" "${{ secrets.DO_REPORTING }}"; do
+            rsync -av --delete \
+              --exclude ".git/" \
+              --exclude ".github/" \
+              ./ ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:"$target"/
+          done
