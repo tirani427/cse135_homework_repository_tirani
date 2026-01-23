@@ -3,23 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSE 135 HW Homepage!!</title>
+    <link ref="stylesheet" href="style.css">
+    <title>CSE 135 HW Homepage</title>
+    <style>
+        body {
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;";
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        #main-page {
+            width: 80%;
+            margin: auto;
+            height: fit-content;
+	    padding: 10px;
+	    overflow: hidden;
+        }
+	#full-screen {
+	    //background-color: #FFFBDC;
+	    width: 100vw;
+	    height: 100vh;
+	    overflow: scroll;
+	    margin: 0;
+	}
+        #name {
+            text-align: center;
+            padding-bottom: 10px;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;"
+        }
+        #top-img {
+            width: 100%;
+            height: auto;
+        }
+        #about-me-page {
+            background: #fff;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        #am-title {
+            font-size: 120%;
+	    font-weight: light;
+	    text-align: center;
+            margin-bottom: 10px;
+        }
+        .container {
+            margin-bottom: 20px;
+        }
+        #first-row, #second-row, #third-row {
+            margin-bottom: 15px;
+        }
+	#homework-one-container {
+	    display: flex;
+	    flex-direction: column;
+	    justify-content: center;
+	    background-color: #FFDFBE;
+	    padding: 10px;
+	    gap: 10px;
+	    border-radius: 10px;
+	    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+	}
+	#hw1-title{
+	    text-align: center;
+	    margin-bottom: 5px;
+	}
+    </style>
 </head>
 
 <body>
-    <h1>CSE 135!</h1>
-    <h2>Winter 2026</h2>
-    <script>
-      document.write(`Live @ ${new Date()}`);
-    </script>
-    <h2> Group Member: Tia Irani </h2>
+    <div class="container" id="full-screen">
+    	<div class="container" id="main-page">
+    		<h1 id="name">CSE 135!</h1>
+    		<h2 id="am-title">Winter 2026</h2>
+    		<script>
+      			document.write(`Live @ ${new Date()}`);
+    		</script>
+    		<h4> Group Members </h4>
+		<ul>
+			<li><a href="members/tiairani.html">Tia Irani</a></li>
+		</ul>
 
-    <h3>Homeworks</h3>
-    <h4>Homework 1</h4>
-    <ul>
-      <li><a href="hw1/report.html">Report</a></li>
-      <li><a href="hw1/hello.php">Hello.php</a></li>
-    </ul>
+    		<h3>Homeworks</h3>
+    		<div id="homework-one-container">
+    			<h4 id="hw1-title">Homework 1</h4>
+    			<ul>
+      	   			<li><a href="hw1/report.html">Report</a></li>
+           			<li><a href="hw1/hello.php">Hello.php</a></li>
+    			</ul>
+   		</div>
+   	</div>
+   </div>
 </body>
 
 </html>
