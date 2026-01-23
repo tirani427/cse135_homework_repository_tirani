@@ -57,3 +57,6 @@ Files synchronized to DigitalOcean via `rsync`
 
 Changes appear live on website
 
+### Login / Password Protection
+User: tiairani, Password:  n3v3rg0nN@l3ty0ud0wn
+User: grader, Password: n3v3rg0nN@tUrN@r0unD&d3s3rTy0u
