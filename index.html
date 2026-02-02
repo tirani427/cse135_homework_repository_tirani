@@ -66,6 +66,14 @@
 	    text-align: center;
 	    margin-bottom: 5px;
 	}
+	#columns{
+		display: flex;
+		flex-direction: row;
+	}
+	.column{
+		display: flex;
+		flex-direction: column;
+	}
     </style>
 </head>
 
@@ -91,9 +99,10 @@
     			</ul>
    		</div>
 		<div id="homework-two-container">
-			<h4 id="hw2-title">Homework 2 </h4>
-			<ul>
-				<li> Perl </li>
+			<h4 id="hw2-title" align="center">Homework 2 </h4>
+			<ul id="columns">
+				<div class="column">
+				<h4 align="center"> Perl </h4>
 				<ul>
 					<li><a href="/hw2/cgi-bin/perl-hello-html-world.pl">Hello, Perl!</a></li>
 					<li><a href="/hw2/cgi-bin/perl-hello-json-world.pl">Hello, Perl! (JSON)</a></li>
@@ -104,7 +113,9 @@
 					<li><a href="/hw2/cgi-bin/perl-general-echo.pl">General Echo</a></li>
 					<li><a href="perl-cgiform.html">Sessioning </a></li>
 				</ul>
-				<li>Python</li>
+				</div>
+				<div class="column">
+				<h4 align="center">Python</h4>
 				<ul>
 					<li><a href="/hw2/cgi-bin/hello-html-python.py">Hello, Python!</a></li>
 					<li><a href="/hw2/cgi-bin/hello-json-python.py">Hello, Python! (JSON)</a></li>
@@ -114,7 +125,9 @@
 					<li><a href="echo-form.html">General Echo</a></li>
 					<li><a href="python-cgiform.html">Sessioning</a></li>
 				</ul>
-				<li>PHP</li>
+				</div>
+				<div class="column">
+				<h4 align="center">PHP</h4>
 				<ul>
 					<li><a href="/hw2/cgi-bin/hello-html-php.php">Hello, PHP!</a></li>
 					<li><a href="/hw2/cgi-bin/hello-json-php.php">Hello, PHP! (JSON)</a></li>
@@ -124,6 +137,19 @@
 					<li><a href="echo-form.html">General Echo</a></li>
 					<li><a href="php-cgiform.html">Sessioning</a></li>
 				</ul>
+				</div>
+				<div class="column">
+				<h4 align="center">Node with Express</h4>
+				<ul>
+					<li><a href="/hw2/cgi-bin/hello-html-node.js">Hello, Node!</a></li>
+					<li><a href="/hw2/cgi-bin/hello-json-node.js">Hello, Node! (JSON)</a></li>
+					<li><a href="/hw2/cgi-bin/environment-node.js">Environment Variables</a></li>
+					<li><a href="/hw2/cgi-bin/get-echo-node.js">GET Echo</a></li>
+					<li><a href="/hw2/cgi-bin/post-echo-node.js">POST Echo</a></li>
+					<li><a href="echo-form.html">General Echo</a></li>
+					<li><a href="node-cgiform.html">Sessioning</a></li>
+				</ul>
+				</div>
 			</ul>
 		</div>
    	</div>
