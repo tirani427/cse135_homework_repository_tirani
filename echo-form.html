@@ -26,11 +26,11 @@
 
 			<hr/>
 
-			<h3> Option 2 (no Javascript) </h3>
-			<form method="POST" action="/hw2/cgi-bin/echo-python.py"> <!--CHANGE LINE-->
+			<h3> PHP (no Javascript) </h3>
+			<form method="POST" action="/hw2/cgi-bin/echo-php.php">
 				<label>Name <input name="name"> </label>
                                 <label>Message <input name="message" type="text" autocomplete="off"></label>
-                                <button type="submit">Submit POST in Option 2</button>
+                                <button type="submit">Submit POST in PHP </button>
                         </form>
 
 			</hr/>
@@ -52,7 +52,7 @@
 					<label>Language Endpoint</label>
 					 <select id="language">
 						 <option value="python">Python</option>
-						 <option value="option-2">Option 2</option>
+						 <option value="php">PHP</option>
 						 <option value="option-3">Option 3</option>
 					 </select>
 				</div>
@@ -88,7 +88,7 @@
 		<script>
 			const endpoints = {
 				python: "/hw2/cgi-bin/echo-python.py",
-				option2: "FILL IN",
+				option2: "/hw2/cgi-bin/echo-php.php",
 				option3: "FILL IN"
 			};
 
