@@ -68,3 +68,14 @@ Completing this part of the assignment involved enabling Apache's `mod_deflate` 
 
 ### Obscure Server Identity
 In order to accomplish this part of the assignment, I used ServerToken, ServerSignature, and SecServerSignature, the latter coming from installing Apache's mod-security2. My first strategy was setting ServerToken Prod and ServerSignature Off, and having the condition that `Header always Set Server "CSE135 Server`. However, this only resulted in `Server: Apache` - shorter than before but not changed. So I did more research into methods of hiding the server identity and found mod-security2, which discussed setting the new server name with SecServerSignature. One source recommended setting `ServerTokens Full` so I changed my implementation to attempt it that way. I included `SecServerSignature "CSE135 Server"` in the security.conf file, which worked in the end to hide the server identity.
+
+## Homework 2
+
+### Grader Login: grader
+### Grader Password: 
+`n3v3rg0nnag1v3y0uUp`
+
+### Link: [https://cse135tirani.site](https://cse135tirani.site)
+
+### Third Approach for Third Party Analytics
+Considering the fact that I haven't taken a backend-centered course before, web analytics is a considerably new area of study for me. For that reason, I wanted the third approach for third-part analytics to be centered around how the user interacts with the website more than anything else. After looking around at different applications, I found Matomo. Once I set the analytics up with script tags in the `<head>` portion of the HTML, I noticed that the analytics covers a lot about visits to the website. Even though it's newly installed, it provides different categories that it will start reporting on (once the data becomes available). Some of them are unique visitors, visit duration, visits that "bounced" (left website after one page), the maximum number of actions in one visit, etc.. Professor Powell talked about bot activity during Tuesday and Thursday's lectures in week four, so I'm hoping that having these additional tracking categories will help me better understand how traffic on the webpage can look. 
