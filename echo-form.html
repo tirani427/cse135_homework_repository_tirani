@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Echo Form</title>
+	</head>
+
+	<body>
+		<h1>Echo Form</h1>
+
+		<!-- <label>Language</label>
+		<select id="language">
+			<option value="python">Python</option>
+			<option value="option-2">Option 2</option>
+			<option value="option-3">Option 3</option>
+		</select>
+		-->
+		<noscript>
+			<h2>Mode: Javascript Off</h2>
+			<h3> Python (no Javascript)</h3>
+			<form method="POST" action="/hw2/cgi-bin/echo-python.py">
+				<label>Name <input name="name"> </label>
+				<label>Message <input name="message" type="text" autocomplete="off"></label>
+				<button type="submit">Submit POST in Python</button>
+			</form>
+
+			<hr/>
+
+			<h3> Option 2 (no Javascript) </h3>
+			<form method="POST" action="/hw2/cgi-bin/echo-python.py"> <!--CHANGE LINE-->
+				<label>Name <input name="name"> </label>
+                                <label>Message <input name="message" type="text" autocomplete="off"></label>
+                                <button type="submit">Submit POST in Option 2</button>
+                        </form>
+
+			</hr/>
+			
+			<h3> Option 3 (no Javascript</h3>
+			<form method="POST" action="/hw2/cgi-bin/echo-python.py"> <!--CHANGE LINE-->
+                                <label>Name <input name="name"> </label>
+                                <label>Message <input name="message" type="text" autocomplete="off"></label>
+                                <button type="submit">Submit POST in Option 2</button>
+                        </form>
+			<hr/>
+		</noscript>
+
+		<h2> Enhanced Mode (Javascript On) </h2>
+
+		<form id="echo-form">
+			<div class="row">
+				<div>
+					<label>Language Endpoint</label>
+					 <select id="language">
+						 <option value="python">Python</option>
+						 <option value="option-2">Option 2</option>
+						 <option value="option-3">Option 3</option>
+					 </select>
+				</div>
+
+				<div>
+					<label>HTTP method</label>
+					<select id="method">
+						<option>GET</option>
+						<option selected>POST</option>
+						<option>PUT</option>
+						<option>DELETE</option>
+					</select>
+				</div>
+
+				<div>
+					<label>Encoding</label>
+					<select id="encoding">
+						<option value="application/x-www-form-urlencoded" selected>application/x-www-form-urlencoded</option>
+						<option value="application/json">application/json</option>
+					</select>
+				</div>
+			</div>
+
+			<label>Name <input id="name" name="name"></label>
+			<label>Message <input id="message" name="message" type="text"></label>
+
+			<button type="submit">Send Request</button>
+		</form>
+
+		<h3>Response</h3>
+		<pre id="output">(no request yet)</pre>
+
+		<script>
+			const endpoints = {
+				python: "/hw2/cgi-bin/echo-python.py",
+				option2: "FILL IN",
+				option3: "FILL IN"
+			};
+
+			const form = document.getElementById("echo-form");
+			const output = document.getElementById("output");
+
+			function toURLEncoded(obj){
+				return new URLSearchParams(obj).toString();
+			}
+
+			form.addEventListener("submit", async(e) => {
+				e.preventDefault();
+
+				const lang = document.getElementById("language").value;
+				const method = document.getElementById("method").value;
+				const encoding = document.getElementById("encoding").value;
+
+				const endpoint = endpoints[lang] || endpoints.python;
+
+				const data = {
+					name: document.getElementById("name").value,
+					message: document.getElementById("message").value
+				};
+
+				let url = endpoint;
+				const options = { method, headers: {} };
+
+				if(method === "GET") {
+					url += "?" + toUrlEncoded(data);
+				} else {
+					if(encoding === "application/json"){
+						options.headers["Content-Type"] = "application/json";
+						options.body = JSON.stringify(data);
+					} else {
+						options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+						options.body = toURLEncoded(data);
+					}
+				}
+
+				output.textContent = `Request:\n${method} ${url}\nEncoding:${options.headers["Content-Type"] || "(none)"}\n\nSending...`;
+
+
+				try{
+					const res = await fetch(url, options);
+					const text = await res.text();
+					output.textContent = `HTTP ${res.status} ${res.statusText}\n\n${text}`;
+				} catch (err) {
+					output.textContent = "Fetch error: " + err;
+				}
+			});
+		</script>
+	</body>
+</html>
+
