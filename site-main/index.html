@@ -17,7 +17,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link ref="stylesheet" href="style.css">
-	<script src="./collector.js"></script>
+
+	<script async src="./collector.js"></script>
+	<script async src="./ext-clicks.js"></script>
+	<script async src="./ext-scroll.js"></script>
+
+	<script>
+		collector.init({
+			endpoint: 'https://collector.cse135tirani.site/collect',
+			debug: true});
+		collector.use(ClickTracker);
+		collector.use(ScrollTracker);
+	</script>
+
     <title>CSE 135 HW Homepage</title>
     <style>
         body {

@@ -2,22 +2,38 @@ const { get } = require("http");
 const { url } = require("inspector");
 const { report } = require("process");
 
-const collector = (function() {
+// const collector = (function() {
+(function() {
     'use strict';
 
     const config = {
         endpoint: 'https://collector.cse135tirani.site/collect',
-        debug: false,
+        enableVitals: true,
+        enableErrors: true,
         sampleRate: 1.0,
-        batchSize: 1,
-        flushInterval: 5000,
-        app: '',
-        version:''
+        debug: false,
+        respectConsent: true,
+        detectBots: true
+        // batchSize: 1,
+        // flushInterval: 5000,
+        // app: '',
+        // version:''
     };
 
     let initialized = false;
+    let blocked = false;
+    const customData = {};
     const properties = {};
     let userId = null;
+    const plugins = [];
+    const reportedErrors = new Set();
+    let errorCount = 0;
+    const MAX_ERRORS = 10;
+
+    const vitals = {lcp: null, cls: 0, inp:null};
+    let pageShowTime = Date.now();
+    let totalVisibleTime = 0;
+    
     const extensions = {};
     const queue = [];
 
@@ -25,15 +41,15 @@ const collector = (function() {
     const beaconLog = [];
     const vitalsData = {};
 
-    const defaults = {
-        endpoint: 'https://collector.cse135tirani.site/collect',
-        enableTechnographics: true,
-        enableTiming: true,
-        enableVitals: true,
-        enableErrors: true,
-        sampleRate: 1.0,
-        debug: false
-    };
+    // const defaults = {
+    //     endpoint: 'https://collector.cse135tirani.site/collect',
+    //     enableTechnographics: true,
+    //     enableTiming: true,
+    //     enableVitals: true,
+    //     enableErrors: true,
+    //     sampleRate: 1.0,
+    //     debug: false
+    // };
 
     //Logging
 
@@ -50,6 +66,59 @@ const collector = (function() {
     //Utility
     function round(value){
         return Math.round(value*100)/100;
+    }
+
+    function merge(dst, src){
+        for(const key of Object.keys(src)){
+            dst[key] = src[key];
+        }
+        return dst;
+    }
+
+    //Check Consent
+    function hasConsent(){
+        if(navigator.globalPrivacyControl){
+            return false;
+        }
+        const cookies = document.cookie.split(';');
+        for(const c of cookies){
+            const cookie = c.trim();
+            if(cookie.indexOf('analytics_consent=') === 0){
+                return cookie.split('=')[1] === 'true';
+            }
+        }
+        return false;
+    }
+
+    //Bot Detection
+    function isBot(){
+        if(navigator.webdriver) return true;
+        
+        const ua = navigator.userAgent;
+        if(/HeadlessChrome|PhantomJS|Lighthouse/i.test(ua)) return true;
+
+        if(/Chrome/.test(ua) && !window.chrome) return true;
+
+        if(window._phantom || window.__nightmare || window.callPhantom) return true;
+        
+        return false;
+    }
+
+    //Sampling
+
+    function isSampled(){
+        if(config.sampleRate >= 1.0) return true;
+        if(config.sampleRate <= 0) return false;
+
+        const key = '_collector_sample';
+        let val = sessionStorage.getItem(key);
+        if(val === null){
+            val = Math.random();
+            sessionStorage.setItem(key, val);
+        } else {
+            val = parseFloat(val);
+        }
+        return val < config.sampleRate;
     }
 
     //Session Identity
@@ -168,58 +237,103 @@ const collector = (function() {
     }
 
     //Web Vitals
-    let lcpValue = 0;
-    function observeLCP() {
-        const observer = new PerformanceObserver((list) => {
-            const entries = list.getEntries();
-            const lastEntry = entries[entries.length - 1];
-            lcpValue = lastEntry.renderTime || lastEntry.loadTime;
-        });
-        observer.observe({type: 'largest-contentful-paint', buffered: true});
-        return observer;
-    }
 
-    let clsValue = 0;
-
-    function observeCLS() {
-        const observer = new PerformanceObserver((list) => {
-            for(const entry of list.getEntries()){
-                if(!entry.hadRecentInput){
-                    clsValue += entry.value;
+    function initWebVitals(){
+        try{
+            const lcpObs = new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                if(entries.length){
+                    vitals.lcp = round(entries[entries.length - 1].startTime);
                 }
-            }
-        });
-        observer.observe({type: 'layout-shift', buffered: true});
-        return observer;
+            });
+            lcpObs.observe({type: 'largest-contentful-paint', buffered:true });
+        } catch (e) {
+            warn('LCP not supported');
+        }
+
+        try{
+            const clsObs = new PerformanceObserver((list) => {
+                list.getEntries().forEach((entry) => {
+                    if(!entry.hadRecentInput){
+                        vitals.cls = round(vitals.cls + entry.value);
+                    }
+                });
+            });
+            clsObs.observe({type: 'layout-shift', buffered:true});
+        } catch (e) {
+            warn('CLS not supported');
+        }
+
+        try{
+            const inpObs = new PerformanceObserver((list)=>{
+                list.getEntries().forEach((entry) => {
+                    if(vitals.inp === null || entry.duration > vitals.inp){
+                        vitals.inp = round(entry.duration);
+                    }
+                });
+            });
+            inpObs.observe({type: 'event', buffered:true, durationThreshold: 16 });
+        }catch (e) {
+            warn('INP not supporetd');
+        }
     }
 
-    let inpValue = 0;
-
-    function observeINP() {
-        const interactions = [];
-        const observer = new PerformanceObserver((list) => {
-            for(const entry of list.getEntries()){
-                if(entry.interactionId){
-                    interactions.push(entry.duration);
-                }
-            }
-
-            if(interactions.length > 0){
-                interactions.sort((a,b) => b - a);
-                inpValue = interactions[0];
-            }
-        });
-        observer.observe({type: 'event', buffered: true, durationThreshold: 16});
-        return observer;
+    function getWebVitals(){
+        return{lcp: vitals.lcp, cls: vitals.cls, inp: vitals.inp};
     }
 
-    function getVitalsScore(metric, value){
-        const t = thresholds[metric];
-        if(!t) return null;
-        if(value <= t[0]) return 'good';
-        if(value <= t[1]) return 'needs improvement';
-        return 'poor';
-    }
+    // let lcpValue = 0;
+    // function observeLCP() {
+    //     const observer = new PerformanceObserver((list) => {
+    //         const entries = list.getEntries();
+    //         const lastEntry = entries[entries.length - 1];
+    //         lcpValue = lastEntry.renderTime || lastEntry.loadTime;
+    //     });
+    //     observer.observe({type: 'largest-contentful-paint', buffered: true});
+    //     return observer;
+    // }
+
+    // let clsValue = 0;
+
+    // function observeCLS() {
+    //     const observer = new PerformanceObserver((list) => {
+    //         for(const entry of list.getEntries()){
+    //             if(!entry.hadRecentInput){
+    //                 clsValue += entry.value;
+    //             }
+    //         }
+    //     });
+    //     observer.observe({type: 'layout-shift', buffered: true});
+    //     return observer;
+    // }
+
+    // let inpValue = 0;
+
+    // function observeINP() {
+    //     const interactions = [];
+    //     const observer = new PerformanceObserver((list) => {
+    //         for(const entry of list.getEntries()){
+    //             if(entry.interactionId){
+    //                 interactions.push(entry.duration);
+    //             }
+    //         }
+
+    //         if(interactions.length > 0){
+    //             interactions.sort((a,b) => b - a);
+    //             inpValue = interactions[0];
+    //         }
+    //     });
+    //     observer.observe({type: 'event', buffered: true, durationThreshold: 16});
+    //     return observer;
+    // }
+
+    // function getVitalsScore(metric, value){
+    //     const t = thresholds[metric];
+    //     if(!t) return null;
+    //     if(value <= t[0]) return 'good';
+    //     if(value <= t[1]) return 'needs improvement';
+    //     return 'poor';
+    // }
 
     // function initVitalsObservers(){
     //     if(typeof PerformanceObserver !== 'undefined'){
@@ -268,6 +382,28 @@ const collector = (function() {
     // }
 
     //Error Tracking
+
+    function reportError(errorData){
+        if(errorCount >= MAX_ERRORS) return;
+
+        const key = `${errorData.type}:${errorData.message || ''}:${errorData.source || ''}:${errorData.line || ''}`;
+        if(reportedErrors.has(key)) return;
+        reportedErrors.add(key);
+        errorCount++;
+
+        send({
+            type: 'error',
+            error: errorData,
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            session: getSessionId()
+        });
+
+        window.dispatchEvent(new CustomEvent('collector:error', {
+            detail: {errorData: errorData, count: errorCount}
+        }));
+    }
+
     function initErrorTracking(){
         window.addEventListener('error', (event) => {
             if(event instanceof ErrorEvent){
@@ -304,6 +440,30 @@ const collector = (function() {
         });
     }
 
+    //Retry Queue
+
+    function queueForRetry(payload){
+        try{
+            const queue = JSON.parse(sessionStorage.getItem('_collector_retry') || '[]');
+            if(queue.length >= 50) return;
+            queue.push(payload);
+            sessionStorage.setItem('_collector_retry', JSON.stringify(queue));
+        } catch (e){
+            warn('Session storage unavailable or full');
+        }
+    }
+
+    function processRetryQueue(){
+        try{
+            const queue = JSON.parse(sessionStorage.getItem('_collector_retry') || '[]');
+            if(!queue.length) return;
+            sessionStorage.removeItem('_collector_retry');
+            queue.forEach((payload)=> {send(payload);});
+        } catch (e) {
+            warn('sessionStorage unavailable');
+        }
+    }
+
     //Payload Construction
     function buildPayload(eventName){
         const payload = {
@@ -333,6 +493,10 @@ const collector = (function() {
         // Record in beacon log (for test page introspection)
         beaconLog.push({ time: new Date().toISOString(), payload: payload });
 
+        const markSupported = typeof performance.mark === 'function';
+        if(markSupported){
+            performance.mark('collector_send_start');
+        }
         // Dispatch custom event so test pages can react
         try {
             window.dispatchEvent(new CustomEvent('collector:beacon', { detail: payload }));
@@ -341,25 +505,42 @@ const collector = (function() {
         }
 
         if (config.debug) {
-            console.log('[Collector] Would send:', payload);
+            console.log('[Collector] Debug Payload:', payload);
             return; // Don't actually send in debug mode
         }
 
-        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        if(!config.endpoint){
+            console.warn('[Collector] No endpoint configured');
+            return;
+        }
+
+        const json = JSON.stringify(payload);
+        let sent = false;
+
+        const blob = new Blob([json], { type: 'application/json' });
 
         if (navigator.sendBeacon) {
             navigator.sendBeacon(config.endpoint, blob);
             log('Beacon sent via sendBeacon');
-        } else {
+        } 
+        
+        if(!sent){
             fetch(config.endpoint, {
                 method: 'POST',
-                body: blob,
+                body: json,
+                headers: {'Content-Type': 'application/json'},
                 keepalive: true
             }).catch((err) => {
-                warn('Send failed:', err.message);
+                queueForRetry(payload);
             });
-            log('Beacon sent via fetch');
+            //log('Beacon sent via fetch');
         }
+
+        if(markSupported){
+            performance.mark('collector_send_end');
+            performance.measure('collector_send', 'collector_send_start', 'collector_send_end');
+        }
+        window.dispatchEvent(new CustomEvent('collector:beacon', {detail: paylod}));
     }
 
     function fetchFallback(payload){
@@ -514,65 +695,235 @@ const collector = (function() {
 
     function collect() {
         const payload = {
+            type: type || 'pageview',
             url: window.location.href,
             title: document.title,
             referrer: document.referrer,
             timestamp: new Date().toISOString(),
-            type: 'pageview',
             session: getSessionId(),
             technographics: getTechnographics(),
             timing: getNavigationTiming(),
-            resources: getResourceSummary()
+            resources: getResourceSummary(),
+            vitals: getWebVitals(),
+            errorCount: errorCount,
+            customData: customData
         };
 
-        merge(payload, properties);
-
-        if (userId) {
+        if(userId){
             payload.userId = userId;
         }
 
-        if (config.app) {
-            payload.app = config.app;
-        }
+        plugins.forEach((plugin) => {
+            if(typeof plugin.beforeSend === 'function'){
+                const result = plugin.beforeSend(payload);
+                if(result === false) return;
+                if(result && typeof result === 'object'){
+                    payload = result;
+                }
+            }
+        });
+        // merge(payload, properties);
+
+        // if (userId) {
+        //     payload.userId = userId;
+        // }
+
+        // if (config.app) {
+        //     payload.app = config.app;
+        // }
 
         send(payload);
+        window.dispatchEvent(new CustomEvent('collector:payload', {detail: payload}));
     }
 
-    function sendVitals() {
-        const vitals = {
-            lcp: { value: round(lcpValue), score: getVitalsScore('lcp', lcpValue) },
-            cls: { value: round(clsValue * 1000) / 1000, score: getVitalsScore('cls', clsValue) },
-            inp: { value: round(inpValue), score: getVitalsScore('inp', inpValue) }
-        };
-        send({
-            type: 'vitals',
-            vitals: vitals,
-            url: window.location.href,
-            session: getSessionId(),
-            timestamp: new Date().toISOString()
+    //Time-on-page Tracking
+    function initTimeOnPage(){
+        document.addEventListener('visibilitychange', () => {
+            if(document.visibilityState === 'hidden'){
+                totalVisibleTime += Date.now() - pageShowTime;
+
+                const exitPayload = {
+                    type:'page-exit',
+                    url: window.location.href,
+                    timeOnPage: totalVisibleTime,
+                    vitals: getWebVitals(),
+                    errorCount: errorCount,
+                    timestamp: new Date().toISOString(),
+                    session: getSessionId()
+                };
+
+                plugins.forEach((plugin) => {
+                    if(typeof plugin.onExit === 'function'){
+                        plugin.onExit(exitPayload);
+                    }
+                });
+                send(exitPayload);
+            } else {
+                pageShowTime = Date.now();
+            }
         });
     }
 
+    //Command Queue Processing
+
+    function processQueue(){
+        const queue = window._cq || [];
+        for(const args of queue){
+            const method = args[0];
+            const params = args.slice(1);
+            if(typeof publicAPI[method] === 'function'){
+                publicAPI[method](...params);
+            }
+        }
+        window._cq = {
+            push: (args) => {
+                const method = args[0];
+                const params = args.slice(1);
+                if(typeof publicAPI[method] === 'function'){
+                    publicAPI[method](...params);
+                }
+            }
+        };
+    }
+
+    const publicAPI = {
+        init: function(options){
+            if(initialized){
+                console.warn('[Collector] Already initialized');
+                return;
+            }
+
+            if(typeof performance.mark==='function'){
+                performance.mark('collector_init_start');
+            }
+
+            if(options) merge(config, options);
+
+            if(config.respectConsent && !hasConsent()){
+                console.log('[Collector] No consent, collection disabled');
+                blocked = true;
+                initialized = true;
+                return;
+            }
+
+            if(config.detectBots && isBot()){
+                console.log('[Collector] Bot detected, collection disabled');
+                blocked = true;
+                initialized = true;
+                return;
+            }
+
+            if(!isSampled()){
+                console.log(`[Collector] Session not sampled (rate: ${config.sampleRate})`);
+                blocked = true;
+                initialized = true;
+                return;
+            }
+
+            initialized = true;
+            console.log('[Collector] Initialized', config);
+
+            if(config.enableVitals) initWebVitals();
+            if(config.enableErrors) initErrorTracking();
+            initTimeOnPage();
+
+            processRetryQueue();
+
+            if(document.readyState === 'complete'){
+                setTimeout(() => {collect('pageview');}, 0);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(()=> { collect('pageview');}, 0);
+                });
+            }
+
+            if(typeof performance.mark === 'function'){
+                performance.mark('collector_init_end');
+                performance.measure('collector_init', 'collector_init_start', 'collector_init_end');
+            }
+        },
+
+        track: function(eventName, eventData){
+            if(!initialized || blocked) return;
+
+            const payload = {
+                type: 'event',
+                event: eventName,
+                data: eventData || {},
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                session: getSessionId(),
+                customData: customData
+            };
+            if(userId) payload.userId = userId;
+            send(payload);
+        },
+
+        set: function(key,value){
+            customData[key] = value;
+        },
+
+        identify: function(id){
+            userId = id;
+        },
+
+        use: function(plugin){
+            if(!plugin || typeof plugin !== 'object'){
+                console.warn('[Collector] Invalid plugin');
+                return;
+            }
+            plugins.push(plugin);
+            if(typeof plugin.init === 'function'){
+                plugin.init(config);
+            }
+            console.log(`[Collector] Plugin registered: ${plugin.name || '(unnnamed)'}`);
+        }
+    };
+
+    // function sendVitals() {
+    //     const vitals = {
+    //         lcp: { value: round(lcpValue), score: getVitalsScore('lcp', lcpValue) },
+    //         cls: { value: round(clsValue * 1000) / 1000, score: getVitalsScore('cls', clsValue) },
+    //         inp: { value: round(inpValue), score: getVitalsScore('inp', inpValue) }
+    //     };
+    //     send({
+    //         type: 'vitals',
+    //         vitals: vitals,
+    //         url: window.location.href,
+    //         session: getSessionId(),
+    //         timestamp: new Date().toISOString()
+    //     });
+    // }
+
+    processQueue();
+
     //Expose Public API
 
-    window.collector = {
-        init: init,
-        track: track,
-        set: set,
-        identify: identify,
-        use: use
-    };
+    // window.collector = {
+    //     init: init,
+    //     track: track,
+    //     set: set,
+    //     identify: identify,
+    //     use: use
+    // };
 
   // Also expose internals for test pages
     window.__collector = {
         getNavigationTiming: getNavigationTiming,
         getResourceSummary: getResourceSummary,
         getTechnographics: getTechnographics,
+        getWebVitals: getWebVitals,
         getSessionId: getSessionId,
         getNetworkInfo: getNetworkInfo,
-        getVitalsScore: getVitalsScore,
-        getExtensions: () => extensions,
-        collect: collect
+        reportError: reportError,
+        collect: collect,
+        hasConsent: hasConsent,
+        isBot: isBot,
+        isSampled: isSampled,
+        getErrorCount: () => errorCount,
+        getConfig: () => config,
+        isBlocked: () => blocked,
+        api: publicAPI
     };
 
     // return {
