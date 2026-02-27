@@ -5,8 +5,22 @@ const { report } = require("process");
 const collector = (function() {
     'use strict';
 
-    let config = {};
+    const config = {
+        endpoint: 'https://collector.cse135tirani.site/collect',
+        debug: false,
+        sampleRate: 1.0,
+        batchSize: 1,
+        flushInterval: 5000,
+        app: '',
+        version:''
+    };
+
     let initialized = false;
+    const properties = {};
+    let userId = null;
+    const extensions = {};
+    const queue = [];
+
     const globalProps = {};
     const beaconLog = [];
     const vitalsData = {};
@@ -38,6 +52,7 @@ const collector = (function() {
         return Math.round(value*100)/100;
     }
 
+    //Session Identity
     function getSessionId(){
         let sid = sessionStorage.getItem('_collector_sid');
         if(!sid){
@@ -153,51 +168,104 @@ const collector = (function() {
     }
 
     //Web Vitals
-    function initVitalsObservers(){
-        if(typeof PerformanceObserver !== 'undefined'){
-            try {
-                const lcpObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    if(entries.length){
-                        vitalsData.lcp = round(entries[entries.length - 1].startTime);
-                        log('LCP:', vitalsData.lcp, 'ms');
-                    }
-                });
-                lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
-            } catch (e) {
-                warn('LCP observer not supported');
-            }
-
-            try {
-                const fidObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    if(entries.length){
-                        vitalsData.fid = round(entries[0].processingStart - entries[0].startTime);
-                        log('FID:', vitalsData.fid, 'ms');
-                    }
-                });
-                fidObserver.observe({ type: 'first-input', buffered: true });
-            } catch (e) {
-                warn('FID observer not supported');
-            }
-
-            try{
-                let clsValue = 0;
-                const clsObserver = new PerformanceObserver((list) => {
-                    list.getEntries().forEach((entry) => {
-                        if(!entry.hadRecentInput){
-                            clsValue += entry.value;
-                        }
-                    });
-                    vitalsData.cls = round(clsValue);
-                    log('CLS:', vitalsData.cls);
-                });
-                clsObserver.observe({ type: 'layout-shift', buffered: true });
-            } catch (e) {
-                warn('CLS observer not supported');
-            }
-        }
+    let lcpValue = 0;
+    function observeLCP() {
+        const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const lastEntry = entries[entries.length - 1];
+            lcpValue = lastEntry.renderTime || lastEntry.loadTime;
+        });
+        observer.observe({type: 'largest-contentful-paint', buffered: true});
+        return observer;
     }
+
+    let clsValue = 0;
+
+    function observeCLS() {
+        const observer = new PerformanceObserver((list) => {
+            for(const entry of list.getEntries()){
+                if(!entry.hadRecentInput){
+                    clsValue += entry.value;
+                }
+            }
+        });
+        observer.observe({type: 'layout-shift', buffered: true});
+        return observer;
+    }
+
+    let inpValue = 0;
+
+    function observeINP() {
+        const interactions = [];
+        const observer = new PerformanceObserver((list) => {
+            for(const entry of list.getEntries()){
+                if(entry.interactionId){
+                    interactions.push(entry.duration);
+                }
+            }
+
+            if(interactions.length > 0){
+                interactions.sort((a,b) => b - a);
+                inpValue = interactions[0];
+            }
+        });
+        observer.observe({type: 'event', buffered: true, durationThreshold: 16});
+        return observer;
+    }
+
+    function getVitalsScore(metric, value){
+        const t = thresholds[metric];
+        if(!t) return null;
+        if(value <= t[0]) return 'good';
+        if(value <= t[1]) return 'needs improvement';
+        return 'poor';
+    }
+
+    // function initVitalsObservers(){
+    //     if(typeof PerformanceObserver !== 'undefined'){
+    //         try {
+    //             const lcpObserver = new PerformanceObserver((list) => {
+    //                 const entries = list.getEntries();
+    //                 if(entries.length){
+    //                     vitalsData.lcp = round(entries[entries.length - 1].startTime);
+    //                     log('LCP:', vitalsData.lcp, 'ms');
+    //                 }
+    //             });
+    //             lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    //         } catch (e) {
+    //             warn('LCP observer not supported');
+    //         }
+
+    //         try {
+    //             const fidObserver = new PerformanceObserver((list) => {
+    //                 const entries = list.getEntries();
+    //                 if(entries.length){
+    //                     vitalsData.fid = round(entries[0].processingStart - entries[0].startTime);
+    //                     log('FID:', vitalsData.fid, 'ms');
+    //                 }
+    //             });
+    //             fidObserver.observe({ type: 'first-input', buffered: true });
+    //         } catch (e) {
+    //             warn('FID observer not supported');
+    //         }
+
+    //         try{
+    //             let clsValue = 0;
+    //             const clsObserver = new PerformanceObserver((list) => {
+    //                 list.getEntries().forEach((entry) => {
+    //                     if(!entry.hadRecentInput){
+    //                         clsValue += entry.value;
+    //                     }
+    //                 });
+    //                 vitalsData.cls = round(clsValue);
+    //                 log('CLS:', vitalsData.cls);
+    //             });
+    //             clsObserver.observe({ type: 'layout-shift', buffered: true });
+    //         } catch (e) {
+    //             warn('CLS observer not supported');
+    //         }
+    //     }
+    // }
 
     //Error Tracking
     function initErrorTracking(){
@@ -294,55 +362,83 @@ const collector = (function() {
         }
     }
 
+    function fetchFallback(payload){
+        fetch(config.endpoint, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true
+        }).catch((err) => {
+            warn('Fetch(keepalive) failed:', err.message);
+        });
+    }
+
     //Public API
 
     function init(options){
-        if(initialized){
-            warn('collector.init() called more than once');
-            return;
+        if(options){
+            merge(config, options);
         }
-
-        config = {};
-        for(const key of Object.keys(defaults)){
-            config[key] = (options && options[key] !== undefined) ? options[key]: defaults[key];
-        }
-
-        if(!shouldSample()){
-            log(`Session not sampled (rate: ${config.sampleRate})`);
-            try{
-                window.dispatchEvent(new CustomEvent('collector:not-sampled'));
-            } catch (e) {
-
-            }
-            return;
-        }
-
         initialized = true;
 
-        if(config.enableErrors) initErrorTracking();
-        if(config.enableVitals) initVitalsObservers();
+        observeLCP();
+        observeCLS();
+        observeINP();
+
+        initErrorTracking();
+        log('Initialized with config', config);
 
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const payload = buildPayload('pageview');
-                if(config.enableTiming){
-                    payload.timing = getNavigationTiming();
-                    payload.resources = getResourceSummary();
-                }
-                if(config.enableTechnographics){
-                    payload.technographics = getTechnographics();
-                }
-                send(payload);
+                collect();
             }, 0);
         });
+    //     if(initialized){
+    //         warn('collector.init() called more than once');
+    //         return;
+    //     }
 
-        log('Collector initialized', config);
+    //     config = {};
+    //     for(const key of Object.keys(defaults)){
+    //         config[key] = (options && options[key] !== undefined) ? options[key]: defaults[key];
+    //     }
+
+    //     if(!shouldSample()){
+    //         log(`Session not sampled (rate: ${config.sampleRate})`);
+    //         try{
+    //             window.dispatchEvent(new CustomEvent('collector:not-sampled'));
+    //         } catch (e) {
+
+    //         }
+    //         return;
+    //     }
+
+    //     initialized = true;
+
+    //     if(config.enableErrors) initErrorTracking();
+    //     if(config.enableVitals) initVitalsObservers();
+
+    //     window.addEventListener('load', () => {
+    //         setTimeout(() => {
+    //             const payload = buildPayload('pageview');
+    //             if(config.enableTiming){
+    //                 payload.timing = getNavigationTiming();
+    //                 payload.resources = getResourceSummary();
+    //             }
+    //             if(config.enableTechnographics){
+    //                 payload.technographics = getTechnographics();
+    //             }
+    //             send(payload);
+    //         }, 0);
+    //     });
+
+    //     log('Collector initialized', config);
         
-        try{
-            window.dispatchEvent(new CustomEvent('collector:initialized', { detail: config }));
-        } catch (e) {
-            warn('Failed to dispatch collector:initialized event:', e.message);
-        }
+    //     try{
+    //         window.dispatchEvent(new CustomEvent('collector:initialized', { detail: config }));
+    //     } catch (e) {
+    //         warn('Failed to dispatch collector:initialized event:', e.message);
+    //     }
     }
 
     function track(eventName, data){
@@ -350,50 +446,150 @@ const collector = (function() {
             warn('collector.track() called before initialization');
             return;
         }
-        const payload = buildPayload(eventName);
-        if(data) payload.data = data;
+        const payload = {
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            type: eventName,
+            session: getSessionId(),
+            data: data || {}
+        };
+        merge(payload, properties);
+        if(userId) payload.userId = userId;
+        if(config.app) payload.app = config.app;
+        // const payload = buildPayload(eventName);
+        // if(data) payload.data = data;
         send(payload);
     }
 
     function set(key, value){
-        globalProps[key] = value;
-        log(`Global property set: ${key} =`, value);
-
-        try{
-            window.dispatchEvent(new CustomEvent('collector:set', { detail: { key:key, value:value } }));
-        } catch (e) {
-            warn('Failed to dispatch collector:set event:', e.message);
+        if(typeof key === 'object'){
+            merge(properties, key);
+        }else{
+            properties[key] = value;
         }
+        log('Properties updated:', properties);
+        // globalProps[key] = value;
+        // log(`Global property set: ${key} =`, value);
+
+        // try{
+        //     window.dispatchEvent(new CustomEvent('collector:set', { detail: { key:key, value:value } }));
+        // } catch (e) {
+        //     warn('Failed to dispatch collector:set event:', e.message);
+        // }
     }
 
-    function identify(userId){
-        globalProps.userId = userId;
-        log(`User identified: ${userId}`);
+    function identify(id){
+        userId = id;
+        log('User identified:', id);
+        // globalProps.userId = userId;
+        // log(`User identified: ${userId}`);
 
-        try{
-            window.dispatchEvent(new CustomEvent('collector:identify', { detail: { userId: userId } }));
-        } catch (e) {
-            warn('Failed to dispatch collector:identify event:', e.message);
+        // try{
+        //     window.dispatchEvent(new CustomEvent('collector:identify', { detail: { userId: userId } }));
+        // } catch (e) {
+        //     warn('Failed to dispatch collector:identify event:', e.message);
+        // }
+    }
+
+    function use(extension){
+        if(!extension || !extension.name){
+            warn('Extension must have a name property');
+            return;
         }
+        if(extensions[extension.name]){
+            warn(`Extension with name ${extension.name} already exists`);
+            return;
+        }
+        extensions[extension.name] = extension;
+        if(typeof extension.init === 'function'){
+            extension.init({
+                track: track,
+                set: set,
+                getConfig: () => config,
+                getSessionId: getSessionId
+            });
+        }
+        log('Extension registered:', extension.name);
+    }
+
+    function collect() {
+        const payload = {
+            url: window.location.href,
+            title: document.title,
+            referrer: document.referrer,
+            timestamp: new Date().toISOString(),
+            type: 'pageview',
+            session: getSessionId(),
+            technographics: getTechnographics(),
+            timing: getNavigationTiming(),
+            resources: getResourceSummary()
+        };
+
+        merge(payload, properties);
+
+        if (userId) {
+            payload.userId = userId;
+        }
+
+        if (config.app) {
+            payload.app = config.app;
+        }
+
+        send(payload);
+    }
+
+    function sendVitals() {
+        const vitals = {
+            lcp: { value: round(lcpValue), score: getVitalsScore('lcp', lcpValue) },
+            cls: { value: round(clsValue * 1000) / 1000, score: getVitalsScore('cls', clsValue) },
+            inp: { value: round(inpValue), score: getVitalsScore('inp', inpValue) }
+        };
+        send({
+            type: 'vitals',
+            vitals: vitals,
+            url: window.location.href,
+            session: getSessionId(),
+            timestamp: new Date().toISOString()
+        });
     }
 
     //Expose Public API
 
-    return {
+    window.collector = {
         init: init,
         track: track,
         set: set,
         identify: identify,
-
-        _getConfig: () => JSON.parse(JSON.stringify(config)), // Deep copy for safety
-        _getGlobalProps: () => JSON.parse(JSON.stringify(globalProps)),
-        _getBeaconLog: () => beaconLog.slice(),
-        _isInitialized: () => initialized,
-        _isSampled: () => {
-            const s = sessionStorage.getItem('_collector_sampled');
-            return s === 'true';
-        }
+        use: use
     };
+
+  // Also expose internals for test pages
+    window.__collector = {
+        getNavigationTiming: getNavigationTiming,
+        getResourceSummary: getResourceSummary,
+        getTechnographics: getTechnographics,
+        getSessionId: getSessionId,
+        getNetworkInfo: getNetworkInfo,
+        getVitalsScore: getVitalsScore,
+        getExtensions: () => extensions,
+        collect: collect
+    };
+
+    // return {
+    //     init: init,
+    //     track: track,
+    //     set: set,
+    //     identify: identify,
+
+    //     _getConfig: () => JSON.parse(JSON.stringify(config)), // Deep copy for safety
+    //     _getGlobalProps: () => JSON.parse(JSON.stringify(globalProps)),
+    //     _getBeaconLog: () => beaconLog.slice(),
+    //     _isInitialized: () => initialized,
+    //     _isSampled: () => {
+    //         const s = sessionStorage.getItem('_collector_sampled');
+    //         return s === 'true';
+    //     }
+    // };
 })();
 
 
