@@ -1,8 +1,60 @@
+const { url } = require("inspector");
+
 (function() {
     'use strict';
 
     const ENDPOINT = 'https://collector.cse135tirani.site/collect';
     
+    function getNavigationTiming(){
+        const entries = performance.getEntriesByType('navigation');
+        if(!entries.length) return {};
+
+        const n = entries[0];
+
+        return {
+            dnsLookup: round(n.domainLookupEnd - n.domainLookupStart),
+            tcpConnect: round(n.connectEnd - n.connectStart),
+            tlsHandshake: n.secureConnectionStart > 0 ? round(n.connectEnd - n.secureConnectionStart) : 0,
+            ttfb: round(n.responseStart - n.requestStart),
+            download: round(n.responseEnd - n.responseStart),
+            domInteractive: round(n.domInteractive - n.fetchStart),
+            domComplete: round(n.domComplete - n.fetchStart),
+            loadEvent: round(n.loadEventEnd - n.fetchStart),
+            fetchTime: round(n.responseEnd - n.fetchStart),
+            transferSize: n.transferSize,
+            headerSize: n.transferSize - n.encodedBodySize
+        };
+    }
+
+    function round(value){
+        return Math.round(value*100)/100;
+    }
+
+    function getResourceSummary(){
+        const resources = performance.getEntriesByType('resource');
+
+        const summary = {
+            script: { count: 0, totalSize: 0, totalDuration: 0 },
+            link: { count: 0, totalSize: 0, totalDuration: 0 },
+            img: { count: 0, totalSize: 0, totalDuration: 0 },
+            font: { count: 0, totalSize: 0, totalDuration: 0 },
+            fetch: { count: 0, totalSize: 0, totalDuration: 0 },
+            xmlhttprequest: { count: 0, totalSize: 0, totalDuration: 0 },
+            other: { count: 0, totalSize: 0, totalDuration: 0 }
+        };
+
+        resources.forEach((res) => {
+            const type = summary[res.initiatorType] ? res.initiatorType : 'other';
+            summary[type].count += 1;
+            summary[type].totalSize += res.transferSize || 0;
+            summary[type].totalDuration += res.duration || 0;
+        });
+        return {
+            totalResources: resources.length,
+            byType: summary
+        };
+    }
+
     function getSessionId(){
         let sid = sessionStorage.getItem('_collector_sid');
         if(!sid){
@@ -11,6 +63,8 @@
         }
         return sid;
     }
+
+    const sessionId = getSessionId();
 
     function getNetworkInfo(){
         if(!('connection' in navigator)) return {};
@@ -25,7 +79,7 @@
     }
 
     function getTechnographics(){
-        return {
+        const data =  {
             //Browser Identification
             userAgent: navigator.userAgent,
             language: navigator.language,
@@ -44,8 +98,49 @@
             network: getNetworkInfo(),
             //Preferences
             colorScheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0
         };
+        if(navigator.connection){
+                data.connectionType = navigator.connection.effectiveType || '';
+                data.connectionDownlink = navigator.connection.downlink || '';
+        }
+
+        return data;
+    }
+
+    function send(payload){
+        const json = JSON.stringify(payload);
+        const blob = new Blob([json], { type: 'application/json' });
+
+        if(navigator.sendBeacon){
+            const sent = navigator.sendBeacon(ENDPOINT, blob);
+            if(sent){
+                console.log('[Collector v1] sendBeacon sent successfully');
+                return;
+            }
+            console.log('[Collector v1] sendBeacon failed, falling back to fetch');
+        }
+
+        fetch(ENDPOINT, {
+            method: 'POST',
+            body: json,
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true
+        }).then((resp) => {
+            console.log('[Collector v3] Fetch(keepalive) status:', resp.status);
+        }).catch((err) =>{
+            console.log('[Collector v3] Fetch(keepalive) failed, trying plain fetch:');
+            fetch(ENDPOINT, {
+                method: 'POST',
+                body: json,
+                headers: { 'Content-Type': 'application/json' }
+            }).then((resp) => {
+                console.log('[Collector v3] Plain Fetch status:', resp.status);
+            }).catch((err)=>{
+                console.error('[Collector v3] all delivery methods failed:', err.message);
+            });
+        });
     }
     
     function collect() {
@@ -56,32 +151,56 @@
             timestamp: new Date().toISOString(),
             type: 'pageview',
             session: getSessionId(),
-            technographics: getTechnographics()
+            technographics: getTechnographics(),
+            timing: getNavigationTiming(),
+            resources: getResourceSummary()
         };
 
-        console.log('[Collector v1] Sending beacon:', payload);
+        send(payload);
 
-        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        // console.log('[Collector v1] Sending beacon:', payload);
 
-        if(navigator.sendBeacon){
-            const sent = navigator.sendBeacon(ENDPOINT, blob);
-            console.log('[Collector v1] sendBeacon sent:', sent);
-        } else {
-            console.warn('[Collector v1] sendBeacon not available, using fetch fallback');
-        }
-        console.log('[collector v2] payload:', payload);
-        window.dispatchEvent(new CustomEvent('collector:payload', { detail: payload }));
+        // const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+
+        // if(navigator.sendBeacon){
+        //     const sent = navigator.sendBeacon(ENDPOINT, blob);
+        //     console.log('[Collector v1] sendBeacon sent:', sent);
+        // } else {
+        //     console.warn('[Collector v1] sendBeacon not available, using fetch fallback');
+        // }
+        // console.log('[collector v2] payload:', payload);
+        // window.dispatchEvent(new CustomEvent('collector:payload', { detail: payload }));
     }
 
-    window.addEventListener('load', () => {
-        console.log('[Collector v1] Page loaded, collecting technographics');
-        collect();
+    window.__collectorSendEvent = (eventType, eventData) => {
+        const payload = {
+            url: window.location.href,
+            title: document.title,
+            referrer: document.referrer,
+            timestamp: new Date().toISOString(),
+            type: eventType || 'custom',
+            sessionId: sessionId,
+            data: eventData || {}
+        };
+        send(payload);
+    };
+
+    if(document.readyState === 'complete'){
+        collect('pageview');
+    } else {
+        window.addEventListener('load', () => collect('pageview'));
+    }
+
+    window.addEventListener('load', () =>{
+        setTimeout(() => {
+            console.log('[Collector v4] Page loaded, collecting performance timing');
+            collect();
+        }, 0);
     });
 
     document.addEventListener('visibilitychange', () => {
         if(document.visibilityState === 'hidden') {
-            console.log('[Collector v1] Page hidden, sending exit beacon');
-            collect();
+            collect('pagehide');
         }
     });
 
