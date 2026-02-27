@@ -16,24 +16,32 @@ jobs:
 
       - name: Setup SSH
         run: |
+          set -e
           mkdir -p ~/.ssh
           echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy with rsync over SSH
+      - name: Deploy main site
         run: |
           rsync -av --delete \
             --exclude ".git/" \
             --exclude ".github/" \
-            ./site-main/  ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_PATH }}/
+            ./site-main/ \
+            ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_PATH }}/
 
+      - name: Deploy collector site
+        run: |
           rsync -av --delete \
             --exclude ".git/" \
             --exclude ".github/" \
-            ./site-collector/  ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_COLLECTOR }}/
+            ./site-collector/ \
+            ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_COLLECTOR }}/
 
+      - name: Deploy reporting site
+        run: |
           rsync -av --delete \
             --exclude ".git/" \
             --exclude ".github/" \
-            ./site-reporting/  ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_REPORTING }}/
+            ./site-reporting/ \
+            ${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}:${{ secrets.DO_REPORTING }}/
