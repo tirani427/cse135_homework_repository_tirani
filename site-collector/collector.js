@@ -1,11 +1,75 @@
 const { get } = require("http");
 const { url } = require("inspector");
+const { report } = require("process");
 
 (function() {
     'use strict';
 
     const ENDPOINT = 'https://collector.cse135tirani.site/collect';
 
+
+    // ERROR REPORTING/TRACKING
+    const reportedErrors = new Set();
+    let errorCount = 0;
+    const MAX_ERRORS = 10;
+    
+    function reportError(errorData){
+        if(errorCount >= MAX_ERRORS){ return; }
+
+        const key = `${errorData.type}:${errorData.message}:${errorData.source || ''}:${errorData.line || ''}`;
+        if(reportedErrors.has(key)) return;
+        reportedErrors.add(key);
+        errorCount++;
+
+        send({
+            type:'error',
+            error: errorData,
+            timestamp: new Date().toISOString(),
+            url: window.location.href
+        });
+
+        window.dispatchEvent(new CustomEvent('collector:error', { detail: { errorData: errorData, count: errorCount } }));
+    }
+
+    function initErrorTracking(){
+        window.addEventListener('error', (event) => {
+            if(event instanceof ErrorEvent){
+                reportError({
+                    type:'js-error',
+                    message: event.message,
+                    source: event.filename,
+                    line: event.lineno,
+                    column: event.colno,
+                    stack: event.error ? event.error.stack : '',
+                    url: window.location.href
+                });
+            } else {
+                const target = event.target;
+                if(target && (target.tagName === 'IMG' || target.tagName ==='SCRIPT' || target.tagName === 'LINK')){
+                    reportError({
+                        type:'resource-error',
+                        tagName: target.tagName,
+                        src: target.src || target.href || '',
+                        url: window.location.href
+                    });
+                }
+            }
+        }, true);
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason;
+            reportError({
+                type:'promise-rejection',
+                message: reason instanceof Error ? reason.message : String(reason),
+                stack: reason instanceof Error ? reason.stack : '',
+                url: window.location.href
+            });
+        });
+    }
+        
+
+
+    // PERFORMANCE OBSERVERS
     const observer = new PerformanceObserver((list) => {
         for(const entry of list.getEntries()) {
             console.log(entry.entryType, entry);
@@ -56,6 +120,50 @@ const { url } = require("inspector");
         });
         observer.observe({type: 'event', buffered: true, durationThreshold: 16});
         return observer;
+    }
+
+    function initWebVitals() {
+        // Largest Contentful Paint (LCP)
+        try {
+        const lcpObserver = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            if (entries.length) {
+            vitals.lcp = round(entries[entries.length - 1].startTime);
+            }
+        });
+        lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+        } catch (e) {
+        console.log('[collector-v6] LCP observer not supported');
+        }
+
+        // Cumulative Layout Shift (CLS)
+        try {
+        const clsObserver = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+            if (!entry.hadRecentInput) {
+                vitals.cls = round(vitals.cls + entry.value);
+            }
+            });
+        });
+        clsObserver.observe({ type: 'layout-shift', buffered: true });
+        } catch (e) {
+        console.log('[collector-v6] CLS observer not supported');
+        }
+
+        // Interaction to Next Paint (INP)
+        try {
+        const inpObserver = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+            const duration = entry.duration;
+            if (vitals.inp === null || duration > vitals.inp) {
+                vitals.inp = round(duration);
+            }
+            });
+        });
+        inpObserver.observe({ type: 'event', buffered: true, durationThreshold: 16 });
+        } catch (e) {
+        console.log('[collector-v6] INP observer not supported');
+        }
     }
 
     const thresholds = {
@@ -242,10 +350,15 @@ const { url } = require("inspector");
             session: getSessionId(),
             technographics: getTechnographics(),
             timing: getNavigationTiming(),
-            resources: getResourceSummary()
+            resources: getResourceSummary(),
+            vitals: getWebVitals(),
+            errorCount: errorCount
         };
 
         send(payload);
+
+        window.dispatchEvent(new CustomEvent('collector:payload', { detail: payload }));
+
 
         // console.log('[Collector v1] Sending beacon:', payload);
 
@@ -260,6 +373,9 @@ const { url } = require("inspector");
         // console.log('[collector v2] payload:', payload);
         // window.dispatchEvent(new CustomEvent('collector:payload', { detail: payload }));
     }
+
+    initErrorTracking();
+    initWebVitals();
 
     window.__collectorSendEvent = (eventType, eventData) => {
         const payload = {
@@ -291,6 +407,54 @@ const { url } = require("inspector");
         }, 0);
     });
 
+    // window.addEventListener('error', (event) => {
+    //     if(event instanceof ErrorEvent){
+    //         reportError({
+    //             type:'js-error',
+    //             message: event.message,
+    //             source: event.filename,
+    //             line: event.lineno,
+    //             column: event.colno,
+    //             stack: event.error ? event.error.stack : '',
+    //             url: window.location.href
+    //         });
+    //     }
+    // });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason;
+        reportError({
+            type:'promise-rejection',
+            message: reason instanceof Error ? reason.message : String(reason),
+            stack: reason instanceof Error ? reason.stack : '',
+            url: window.location.href
+        });
+    });
+
+    window.addEventListener('error', (event) => {
+        if(!(event instanceof ErrorEvent)){
+            const target = event.target;
+            if(target && (target.tagName === 'IMG' || target.tagName ==='SCRIPT' || target.tagName === 'LINK')){
+                reportError({
+                    type:'resource-error',
+                    tagName: target.tagName,
+                    src: target.src || target.href || '',
+                    url: window.location.href
+                });
+            }
+        }
+    }, true);
+
+    // const originalConsoleError = console.error;
+    // console.error = (...args) => {
+    //     reportError({
+    //         type:'console-error',
+    //         message: args.map(String).join(' '),
+    //         url: window.location.href
+    //     });
+    //     originalConsoleError(...args);
+    // };
+
     document.addEventListener('visibilitychange', () => {
         if(document.visibilityState === 'hidden') {
             sendVitals();
@@ -310,6 +474,8 @@ const { url } = require("inspector");
             inp: {value: round(inpValue), score: getVitalsScore('inp', inpValue)}
         }),
         collect: collect,
-        sendVitals
+        sendVitals: sendVitals,
+        getErrorCount: () => errorCount,
+        getReportedErrors: () => Array.from(reportedErrors)
     };
 })();
