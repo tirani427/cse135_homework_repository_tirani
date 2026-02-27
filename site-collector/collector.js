@@ -1,10 +1,93 @@
+const { get } = require("http");
 const { url } = require("inspector");
 
 (function() {
     'use strict';
 
     const ENDPOINT = 'https://collector.cse135tirani.site/collect';
-    
+
+    const observer = new PerformanceObserver((list) => {
+        for(const entry of list.getEntries()) {
+            console.log(entry.entryType, entry);
+        }
+    });
+    observer.observe({ type: 'largest-contentful-paint', buffered: true });
+
+    let lcpValue = 0;
+    function observeLCP() {
+        const observer = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const lastEntry = entries[entries.length - 1];
+            lcpValue = lastEntry.renderTime || lastEntry.loadTime;
+        });
+        observer.observe({type: 'largest-contentful-paint', buffered: true});
+        return observer;
+    }
+
+    let clsValue = 0;
+
+    function observeCLS() {
+        const observer = new PerformanceObserver((list) => {
+            for(const entry of list.getEntries()){
+                if(!entry.hadRecentInput){
+                    clsValue += entry.value;
+                }
+            }
+        });
+        observer.observe({type: 'layout-shift', buffered: true});
+        return observer;
+    }
+
+    let inpValue = 0;
+
+    function observeINP() {
+        const interactions = [];
+        const observer = new PerformanceObserver((list) => {
+            for(const entry of list.getEntries()){
+                if(entry.interactionId){
+                    interactions.push(entry.duration);
+                }
+            }
+
+            if(interactions.length > 0){
+                interactions.sort((a,b) => b - a);
+                inpValue = interactions[0];
+            }
+        });
+        observer.observe({type: 'event', buffered: true, durationThreshold: 16});
+        return observer;
+    }
+
+    const thresholds = {
+        lcp: [2500, 4000],
+        cls: [0.1, 0.25],
+        inp: [200, 500]
+    };
+
+    function getVitalsScore(metric, value){
+        const t = thresholds[metric];
+        if(!t) return null;
+        if(value <= t[0]) return 'good';
+        if(value <= t[1]) return 'needs improvement';
+        return 'poor';
+    }
+
+    function sendVitals(){
+        const vitals = {
+            lcp: {value: round(lcpValue), score: getVitalsScore('lcp', lcpValue)},
+            cls: {value: round(clsValue*1000)/1000, score: getVitalsScore('cls', clsValue)},
+            inp: {value: round(inpValue), score: getVitalsScore('inp', inpValue)}
+        };
+        send({
+            type:'vitals',
+            vitals:vitals,
+            url:window.location.href,
+            session: getSessionId(),
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // NAVIGATION TIMING
     function getNavigationTiming(){
         const entries = performance.getEntriesByType('navigation');
         if(!entries.length) return {};
@@ -30,6 +113,7 @@ const { url } = require("inspector");
         return Math.round(value*100)/100;
     }
 
+    // RESOURCE SUMMARY
     function getResourceSummary(){
         const resources = performance.getEntriesByType('resource');
 
@@ -55,6 +139,7 @@ const { url } = require("inspector");
         };
     }
 
+    // SESSION ID
     function getSessionId(){
         let sid = sessionStorage.getItem('_collector_sid');
         if(!sid){
@@ -66,6 +151,7 @@ const { url } = require("inspector");
 
     const sessionId = getSessionId();
 
+    // NETWORK INFORMATION
     function getNetworkInfo(){
         if(!('connection' in navigator)) return {};
 
@@ -78,6 +164,7 @@ const { url } = require("inspector");
         };
     }
 
+    // TECHNO-GRAPHICS
     function getTechnographics(){
         const data =  {
             //Browser Identification
@@ -109,6 +196,7 @@ const { url } = require("inspector");
         return data;
     }
 
+    // DATA DELIVERY
     function send(payload){
         const json = JSON.stringify(payload);
         const blob = new Blob([json], { type: 'application/json' });
@@ -143,6 +231,7 @@ const { url } = require("inspector");
         });
     }
     
+    // MAIN COLLECT FUNCTION
     function collect() {
         const payload = {
             url: window.location.href,
@@ -185,6 +274,10 @@ const { url } = require("inspector");
         send(payload);
     };
 
+    const lcpObserver = observeLCP();
+    const clsObserver = observeCLS();
+    const inpObserver = observeINP();
+
     if(document.readyState === 'complete'){
         collect('pageview');
     } else {
@@ -200,7 +293,7 @@ const { url } = require("inspector");
 
     document.addEventListener('visibilitychange', () => {
         if(document.visibilityState === 'hidden') {
-            collect('pagehide');
+            sendVitals();
         }
     });
 
@@ -208,6 +301,15 @@ const { url } = require("inspector");
         getTechnographics: getTechnographics,
         getSessionId: getSessionId,
         getNetworkInfo: getNetworkInfo,
-        collect: collect
+        getNavigationTiming: getNavigationTiming,
+        getResourceSummary: getResourceSummary,
+        getVitalsScore: getVitalsScore,
+        getVitals: () => ({
+            lcp: {value: round(lcpValue), score: getVitalsScore('lcp', lcpValue)},
+            cls: {value: round(clsValue*1000)/1000, score: getVitalsScore('cls', clsValue)},
+            inp: {value: round(inpValue), score: getVitalsScore('inp', inpValue)}
+        }),
+        collect: collect,
+        sendVitals
     };
 })();
