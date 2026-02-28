@@ -1,13 +1,13 @@
-const { get } = require("http");
-const { url } = require("inspector");
-const { report } = require("process");
+// const { get } = require("http");
+// const { url } = require("inspector");
+// const { report } = require("process");
 
 // const collector = (function() {
 (function() {
     'use strict';
 
     const config = {
-        endpoint: 'https://collector.cse135tirani.site/collect',
+        endpoint: 'https://collector.cse135tirani.site/collector.js',
         enableVitals: true,
         enableErrors: true,
         sampleRate: 1.0,
@@ -19,6 +19,11 @@ const { report } = require("process");
         // app: '',
         // version:''
     };
+
+    const IDLE_THRESHOLD = 2000;
+    const IDLE_POLL = 250;
+    const MOUSEMOVE_THROTTLE = 100;
+    const SCROLL_THROTTLE = 200;
 
     let initialized = false;
     let blocked = false;
@@ -41,15 +46,71 @@ const { report } = require("process");
     const beaconLog = [];
     const vitalsData = {};
 
-    // const defaults = {
-    //     endpoint: 'https://collector.cse135tirani.site/collect',
-    //     enableTechnographics: true,
-    //     enableTiming: true,
-    //     enableVitals: true,
-    //     enableErrors: true,
-    //     sampleRate: 1.0,
-    //     debug: false
-    // };
+    function throttle(fn, waitMs){
+        let last = 0;
+        let timer = null;
+        let lastArguments = null;
+
+        return function throttled(...args){
+            const time = Date.now();
+            lastArguments = args;
+
+            if(time - last >= waitMs){
+                last = time;
+                fn.apply(this, args);
+                return;
+            }
+
+            if(!timer){
+                timer = setTimeout(() => {
+                    timer = null;
+                    last = Date.now();
+                    fn.apply(this, lastArguments);
+                }, waitMs - (time - last));
+            }
+        };
+    }
+
+    //Static Detection
+
+    function detectCSSEnabled(){
+        try{
+            const element = document.createElement("div");
+            element.className = "__collector_css_probe";
+            element.style.position = "absolute";
+            element.style.left = "-9999px";
+            document.documentElement.appendChild(element);
+
+            const elementWidth = getComputedStyle(element).width;
+            element.remove();
+            return elementWidth === "10px";
+        } catch (_){
+            return null;
+        }
+    }
+
+    function detectImagesEnabled(timeoutMs = 800){
+        return new Promise((resolve) => {
+            try{
+                const image = new Image();
+                let done = false;
+
+                const finish = (val) => {
+                    if(done) return;
+                    done = true;
+                    resolve(val);
+                };
+
+                image.onload = () => finish(true);
+                image.onerror = () => finish(false);
+                image.src = "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA="
+
+                setTimeout( () => finish(false), timeoutMs);
+            } catch (_) {
+                resolve(null);
+            }
+        });
+    }
 
     //Logging
 
@@ -131,17 +192,6 @@ const { report } = require("process");
         return sid;
     }
 
-    //Sampling
-    function shouldSample(){
-        const sampled = sessionStorage.getItem('_collector_sampled');
-        if(sampled !== null){
-            return sampled === 'true';
-        }
-        const result = Math.random() < config.sampleRate;
-        sessionStorage.setItem('_collector_sampled', String(result));
-        return result;
-    }
-
     //Network Information
     function getNetworkInfo(){
         if(!('connection' in navigator)) return {};
@@ -157,12 +207,15 @@ const { report } = require("process");
 
     //Technographics
 
-    function getTechnographics(){
+    function getTechnographics({imagesEnabled, cssEnabled}){
         const data =  {
             //Browser Identification
             userAgent: navigator.userAgent,
             language: navigator.language,
             cookiesEnabled: navigator.cookieEnabled,
+            jsEnabled: true,
+            imagesEnabled: imagesEnabled ?? null,
+            cssEnabled: cssEnabled ?? null,
             //Viewport (current browser window)
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
@@ -186,6 +239,183 @@ const { report } = require("process");
         }
 
         return data;
+    }
+
+    function safeNumber(x){
+        const num = Number(x);
+        return Number.isFinite(num) ? num : null;
+    }
+
+    function getPerformanceData(){
+        try{
+            const navigate = performance.getEntriesByType("navigation")[0];
+            if(!navigate) return null;
+
+            const navigateJSON = navigate.toJSON ? navigate.toJSON() : navigate;
+
+            const pageStart = safeNumber(navigate.startTime);
+            const pageEnd = safeNumber(navigate.loadEventEnd);
+
+            const totalLoadMS = pageStart !== null && pageEnd !== null ? Math.max(0, pageEnd - pageStart) : null;
+
+            return{
+                navigationEntry: navigateJSON,
+                pageLoad: {
+                    startTime: pageStart,
+                    endTime: pageEnd,
+                    totalLoadMS: totalLoadMS
+                }
+            };
+        } catch (_){
+            return null;
+        }
+    }
+
+    function createActivityCollector({endpoint, sid, flushInterval}){
+        const activityQueue = [];
+        let flushTimer = null;
+
+        let lastActivity = Date.now();
+        let idleStart = null;
+
+        function enqueue(ev){
+            activityQueue.push(ev);
+        }
+        function flush(reason="interval"){
+            if(activityQueue.length === 0) return;
+            const payload = {
+                type: "activity_batch",
+                sid: sid,
+                url: window.location.href,
+                ts: Date.now(),
+                reason: reason,
+                events: activityQueue.splice(0, activityQueue.length)
+            };
+            send(payload);
+        }
+        function markActivity(){
+            const time = Date.now();
+            if(idleStart !== null){
+                enqueue({
+                    kind:"idle_end",
+                    ts: time,
+                    idleStartedAt: idleStart,
+                    idleDurationMs: time - idleStart
+                });
+                idleStart = null;
+            }
+            lastActivity = time;
+        }
+
+        const idleCounter = setInterval(()=>{
+            const time = Date.now();
+            if(idleStart === null && time - lastActivity >= IDLE_THRESHOLD){
+                idleStart = lastActivity + IDLE_THRESHOLD;
+                enqueue({kind: "idle_start", ts:idleStart});
+            }
+        }, IDLE_POLL);
+
+        const onMouseMove = throttle((e) => {
+            markActivity();
+            enqueue({kind:"mousemove", ts:Date.now(), x:e.clientX, y: e.clientY});
+        }, MOUSEMOVE_THROTTLE);
+
+        const onClick = (e) => {
+            markActivity();
+            enqueue({
+                kind:"click",
+                ts:Date.now(),
+                x: e.clientX,
+                y: e.clientY,
+                button: e.button
+            });
+        };
+
+        const onScroll = throttle(() => {
+            markActivity();
+            enqueue({
+                kind:"scroll",
+                ts:Date.now(),
+                scrollX: window.scrollX,
+                scrollY: window.scrollY
+            });
+        }, SCROLL_THROTTLE);
+
+        const onKeyDown = (e) => {
+            markActivity();
+            enqueue({
+                kind:"keydown",
+                ts: Date.now(),
+                key: e.key,
+                code: e.code,
+            });
+        };
+
+        const onKeyUp = (e) => {
+            markActivity();
+            enqueue({
+                kind:"keyup",
+                ts: Date.now(),
+                key: e.key,
+                code: e.code,
+            });
+        };
+
+        function sendEnter(){
+            send({
+                type:"activity",
+                sid:sid,
+                url:window.location.href,
+                ts: Date.now(),
+                event: {
+                    kind: "page_enter"
+                }
+            });
+        }
+
+        function sendLeave(reason="pagehide"){
+            flush(reason);
+            send({
+                type:"activity",
+                sid:sid,
+                url: window.location.href,
+                ts: Date.now(),
+                event: {
+                    kind:"page_leave", 
+                    reason: reason
+                }
+            });
+        }
+
+        window.addEventListener("mousemove", onMouseMove, {passive: true });
+        window.addEventListener("click", onClick, {passive: true});
+        window.addEventListener("scroll", onScroll, {passive: true});
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+
+        window.addEventListener("pagehide", () => sendLeave("pagehide"));
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") sendLeave("visibilityhidden");
+        });
+
+        flushTimer = setInterval(() => flush("interval"), flushInterval);
+
+        sendEnter();
+
+        return {
+            flush,
+            stop() {
+                clearInterval(flushTimer);
+                clearInterval(idleCounter);
+                window.removeEventListener("mousemove", onMouseMove);
+                window.removeEventListener("click", onClick);
+                window.removeEventListener("scroll", onScroll);
+                window.removeEventListener("keydown", onKeyDown);
+                window.removeEventListener("keyup", onKeyUp);
+            },
+        };
+
+
     }
 
     //Navigation Timing
@@ -520,7 +750,7 @@ const { report } = require("process");
         const blob = new Blob([json], { type: 'application/json' });
 
         if (navigator.sendBeacon) {
-            navigator.sendBeacon(config.endpoint, blob);
+            sent = navigator.sendBeacon(config.endpoint, blob);
             log('Beacon sent via sendBeacon');
         } 
         
@@ -540,7 +770,7 @@ const { report } = require("process");
             performance.mark('collector_send_end');
             performance.measure('collector_send', 'collector_send_start', 'collector_send_end');
         }
-        window.dispatchEvent(new CustomEvent('collector:beacon', {detail: paylod}));
+        //window.dispatchEvent(new CustomEvent('collector:beacon', {detail: payload}));
     }
 
     function fetchFallback(payload){
@@ -554,147 +784,9 @@ const { report } = require("process");
         });
     }
 
-    //Public API
 
-    function init(options){
-        if(options){
-            merge(config, options);
-        }
-        initialized = true;
-
-        observeLCP();
-        observeCLS();
-        observeINP();
-
-        initErrorTracking();
-        log('Initialized with config', config);
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                collect();
-            }, 0);
-        });
-    //     if(initialized){
-    //         warn('collector.init() called more than once');
-    //         return;
-    //     }
-
-    //     config = {};
-    //     for(const key of Object.keys(defaults)){
-    //         config[key] = (options && options[key] !== undefined) ? options[key]: defaults[key];
-    //     }
-
-    //     if(!shouldSample()){
-    //         log(`Session not sampled (rate: ${config.sampleRate})`);
-    //         try{
-    //             window.dispatchEvent(new CustomEvent('collector:not-sampled'));
-    //         } catch (e) {
-
-    //         }
-    //         return;
-    //     }
-
-    //     initialized = true;
-
-    //     if(config.enableErrors) initErrorTracking();
-    //     if(config.enableVitals) initVitalsObservers();
-
-    //     window.addEventListener('load', () => {
-    //         setTimeout(() => {
-    //             const payload = buildPayload('pageview');
-    //             if(config.enableTiming){
-    //                 payload.timing = getNavigationTiming();
-    //                 payload.resources = getResourceSummary();
-    //             }
-    //             if(config.enableTechnographics){
-    //                 payload.technographics = getTechnographics();
-    //             }
-    //             send(payload);
-    //         }, 0);
-    //     });
-
-    //     log('Collector initialized', config);
-        
-    //     try{
-    //         window.dispatchEvent(new CustomEvent('collector:initialized', { detail: config }));
-    //     } catch (e) {
-    //         warn('Failed to dispatch collector:initialized event:', e.message);
-    //     }
-    }
-
-    function track(eventName, data){
-        if(!initialized){
-            warn('collector.track() called before initialization');
-            return;
-        }
-        const payload = {
-            url: window.location.href,
-            timestamp: new Date().toISOString(),
-            type: eventName,
-            session: getSessionId(),
-            data: data || {}
-        };
-        merge(payload, properties);
-        if(userId) payload.userId = userId;
-        if(config.app) payload.app = config.app;
-        // const payload = buildPayload(eventName);
-        // if(data) payload.data = data;
-        send(payload);
-    }
-
-    function set(key, value){
-        if(typeof key === 'object'){
-            merge(properties, key);
-        }else{
-            properties[key] = value;
-        }
-        log('Properties updated:', properties);
-        // globalProps[key] = value;
-        // log(`Global property set: ${key} =`, value);
-
-        // try{
-        //     window.dispatchEvent(new CustomEvent('collector:set', { detail: { key:key, value:value } }));
-        // } catch (e) {
-        //     warn('Failed to dispatch collector:set event:', e.message);
-        // }
-    }
-
-    function identify(id){
-        userId = id;
-        log('User identified:', id);
-        // globalProps.userId = userId;
-        // log(`User identified: ${userId}`);
-
-        // try{
-        //     window.dispatchEvent(new CustomEvent('collector:identify', { detail: { userId: userId } }));
-        // } catch (e) {
-        //     warn('Failed to dispatch collector:identify event:', e.message);
-        // }
-    }
-
-    function use(extension){
-        if(!extension || !extension.name){
-            warn('Extension must have a name property');
-            return;
-        }
-        if(extensions[extension.name]){
-            warn(`Extension with name ${extension.name} already exists`);
-            return;
-        }
-        extensions[extension.name] = extension;
-        if(typeof extension.init === 'function'){
-            extension.init({
-                track: track,
-                set: set,
-                getConfig: () => config,
-                getSessionId: getSessionId
-            });
-        }
-        log('Extension registered:', extension.name);
-    }
-
-    function collect() {
-        const payload = {
+    function collect(type='pageview') {
+        let payload = {
             type: type || 'pageview',
             url: window.location.href,
             title: document.title,
@@ -826,14 +918,37 @@ const { report } = require("process");
             if(config.enableVitals) initWebVitals();
             if(config.enableErrors) initErrorTracking();
             initTimeOnPage();
+            createActivityCollector({
+                endpoint: config.endpoint,
+                sid: getSessionId(),
+                flushInterval: 5000
+            });
 
             processRetryQueue();
 
             if(document.readyState === 'complete'){
                 setTimeout(() => {collect('pageview');}, 0);
             } else {
-                window.addEventListener('load', () => {
-                    setTimeout(()=> { collect('pageview');}, 0);
+                window.addEventListener('load', async () => {
+                    const imagesEnabled = await detectImagesEnabled();
+                    const cssEnabled = detectCSSEnabled();
+
+                    const payload = {
+                        type: 'pageview',
+                        url: window.location.href,
+                        title: document.title,
+                        referrer: document.referrer,
+                        timestamp: new Date().toISOString(),
+                        session: getSessionId(),
+                        technographics: getTechnographics({imagesEnabled, cssEnabled}),
+                        performance: getPerformanceData(),
+                        timing: getNavigationTiming(),
+                        resources: getResourceSummary(),
+                        vitals: getWebVitals(),
+                        errorCount: errorCount
+                    };
+
+                    send(payload);
                 });
             }
 
@@ -846,7 +961,7 @@ const { report } = require("process");
         track: function(eventName, eventData){
             if(!initialized || blocked) return;
 
-            const payload = {
+            let payload = {
                 type: 'event',
                 event: eventName,
                 data: eventData || {},
