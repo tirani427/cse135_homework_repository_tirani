@@ -17,7 +17,7 @@ if($_SERVER["REQUEST_METHOD"] !== "POST"){
 }
 
 $raw = file_get_contents("php://input");
-if($raw === false || trim(raw) === ""){
+if($raw === false || trim($raw) === ""){
     http_response_code(400);
     echo "Empty body\n";
     exit();
@@ -41,7 +41,7 @@ try{
         $cfg["user"],
         $cfg["pass"],
         [
-            PDO::ATTR_ERRMOD => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]
     );
@@ -64,7 +64,7 @@ try{
 
             $stmt->execute([
                 ":sid" => $sid,
-                ":event_type" => $event_type,
+                ":event_type" => $rowType,
                 ":page_url" => $page_url,
                 ":client_ts" => $rowTs,
                 ":payload" => json_encode($event, JSON_UNESCAPED_SLASHES)
@@ -78,10 +78,10 @@ try{
 
         $stmt->execute([
             ":sid" => $sid,
-            ":event_type" => $event_type,
+            ":event_type" => $rowType,
             ":page_url" => $page_url,
-            ":client_ts" => $rowTs,
-            ":payload" => json_encode($event, JSON_UNESCAPED_SLASHES)
+            ":client_ts" => $event_type,
+            ":payload" => json_encode($data, JSON_UNESCAPED_SLASHES)
         ]);
     }
     http_response_code(204);
