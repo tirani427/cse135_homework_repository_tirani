@@ -30,6 +30,10 @@ if(!is_array($data)){
 }
 $sid = isset($data["sid"]) ? substr((string)$data["sid"],0,64) : "missing";
 $event_type = isset($data["type"]) ? substr((string)$data["type"], 0, 32) : "unknown";
+if ($event_type === null || $event_type === "") {
+  $event_type = "unknown";
+}
+
 $page_url = isset($data["url"]) ? (string)$data["url"] : null;
 $client_ts = isset($data["ts"]) ? (int)$data["ts"] : null;
 
@@ -78,9 +82,9 @@ try{
 
         $stmt->execute([
             ":sid" => $sid,
-            ":event_type" => $rowType,
+            ":event_type" => $event_type,
             ":page_url" => $page_url,
-            ":client_ts" => $event_type,
+            ":client_ts" => $client_ts,
             ":payload" => json_encode($data, JSON_UNESCAPED_SLASHES)
         ]);
     }
