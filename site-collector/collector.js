@@ -7,7 +7,7 @@
     'use strict';
 
     const config = {
-        endpoint: 'https://collector.cse135tirani.site/collector.js',
+        endpoint: 'https://collector.cse135tirani.site/collect.php',
         enableVitals: true,
         enableErrors: true,
         sampleRate: 1.0,
