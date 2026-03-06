@@ -111,7 +111,7 @@ function validateID($id){
 
     $n = (int)$id;
 
-    return $n > 0 : $n : null;
+    return $n > 0 ? $n : null;
 
 }
 
