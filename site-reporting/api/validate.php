@@ -12,13 +12,13 @@ function validateBeacon($data){
 
     return [
         'url' => sanitize($data['url'], 2048),
-        'type' => sanitize($data['type'] && in_array($data['type'], $allowedTypes)) ? data['type'] : 'pageview',
+        'type' => (isset($data['type']) && in_array($data['type'], $allowedTypes)) ? data['type'] : 'pageview',
         'userAgent' => sanitize($data['userAgent'] ?? '', 512),
-        'viewportHeight' => sanitize($data['viewportHeight'] ?? null, 0, 32767),
-        'viewportWidth' => sanitize($data['viewportWidth'] ?? null, 0, 32767),
+        'viewportHeight' => clampInt($data['viewportHeight'] ?? null, 0, 32767),
+        'viewportWidth' => clampInt($data['viewportWidth'] ?? null, 0, 32767),
         'referrer' => sanitize($data['referrer'] ?? '', 2048),
         'timestamp' => (isset($data['timestamp']) && isISO8601($data['timestamp'])) ? $data['timestamp'] : null,
-        'sessionId' => sanitize($data['sessionId'] ?? '', 64),
+        'sessionId' => sanitizeId($data['sessionId'] ?? '', 64),
         'payload' => $data['payload'] ?? null
     ];
 }
