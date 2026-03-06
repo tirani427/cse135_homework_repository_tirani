@@ -6,6 +6,8 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 if($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(204); exit(); }
 
+require_once 'validate.php';
+
 $cfg = require "/etc/cse135/collector_db.php";
 
 function json_response($data, int $code = 200){
@@ -50,8 +52,10 @@ if(count($parts) < 2 || $parts[0] !== "api" || $parts[1] !== "events"){
 
 $id = null;
 if(isset($parts[2])){
-    if(!ctype_digit($parts[2])) json_response(["error" => "invalid id"], 404);
-    $id = (int)$parts[2];
+    $id = validateId($parts[2]);
+    if($id === null){
+        json_response(["error" => "invalid id"], 404);
+    }
 }
 
 $method = $_SERVER["REQUEST_METHOD"];
@@ -65,10 +69,15 @@ if($method === "GET"){
         json_response($row, 200); 
     }
 
-    $sid = isset($_GET["sid"]) ? substr((string)$_GET["sid"], 0, 64) : null;
-    $type = isset($_GET["type"]) ? substr((string)$_GET["type"], 0, 32) : null;
-    $limit = isset($_GET["limit"]) ? max(1, min(500, (int)$_GET["limit"])) : 100;
-    $offset = isset($_GET["offset"]) ? max(0, (int)$_GET["offset"]) : 0;
+    $validatedParams = validateQueryParams($_GET);
+    if($validatedParams === null){
+        json_response(["error" => "invalid query parameters"], 400);
+    }
+
+    $sid = $validatedParams['sid'];
+    $type = $validatedParams['type'];
+    $limit = $validatedParams['limit'];
+    $offset = $validatedParams['offset'];
 
     $where = [];
     $params = [":limit" => $limit, ":offset" => $offset];
@@ -103,14 +112,30 @@ if ($method === "POST") {
     if ($id !== null) json_response(["error" => "Do not include id on POST"], 400);
     $body = read_json_body();
     if ($body === null) json_response(["error" => "Invalid JSON body"], 400);
+    $validated = validateBeacon($body);
+    if($validated === null){
+        json_response(["error" => "Invalid beacon"], 400);
+    }
 
-    $sid = isset($body["sid"]) ? substr((string)$body["sid"], 0, 64) : null;
-    $eventType = isset($body["event_type"]) ? substr((string)$body["event_type"], 0, 32) : null;
-    $pageUrl = isset($body["page_url"]) ? (string)$body["page_url"] : null;
-    $clientTs = isset($body["client_ts"]) ? (int)$body["client_ts"] : null;
-    $payload = isset($body["payload"]) ? $body["payload"] : $body;
+    file_put_contents(
+        __DIR__ . "/../logs/beacons.log",
+        json_encode($validated, JSON_UNESCAPED_SLASHES) . "\n",
+        FILE_APPEND | LOCK_EX
+    );
 
-    if (!$sid || !$eventType) json_response(["error" => "sid and event_type required"], 400);
+    $sid = isset($validated["sessionId"]) ? substr((string)$validated["sessionId"], 0, 64) : null;
+    $eventType = isset($validated["type"]) ? substr((string)$validated["type"], 0, 32) : null;
+    $pageUrl = isset($validated["url"]) ? (string)$validated["url"] : null;
+    $clientTs = isset($validated["timestamp"]) ? (int)$validated["timestamp"] : null;
+    $payload = [
+        "userAgent" => $validated["userAgent"],
+        "viewportHeight" => $validated["viewportHeight"],
+        "viewportWidth" => $validated["viewportWidth"],
+        "referrer" => $validated["referrer"],
+        "payload" => $validated["payload"]
+    ];
+
+    if (!$sid) json_response(["error" => "sessionId required"], 400);
 
     $stmt = $pdo->prepare("
         INSERT INTO events (sid, event_type, page_url, client_ts, payload)
@@ -129,18 +154,42 @@ if ($method === "POST") {
 
 if ($method === "PUT") {
     if ($id === null) json_response(["error" => "PUT requires id"], 400);
+    
     $body = read_json_body();
-    if ($body === null) json_response(["error" => "Invalid JSON body"], 400);
+    $validated = validateEventUpdate($body);
+
+    if($body === null){
+        json_response(["error" => "Invalid JSON body"], 400);
+    }
+
+    if($validated === null){
+        json_response(["error" => "Invalid update body"], 400);
+    }
 
     // Allow updating any fields, but keep it simple:
     $fields = [];
     $params = [":id" => $id];
 
-    if (isset($body["sid"])) { $fields[] = "sid = :sid"; $params[":sid"] = substr((string)$body["sid"], 0, 64); }
-    if (isset($body["event_type"])) { $fields[] = "event_type = :event_type"; $params[":event_type"] = substr((string)$body["event_type"], 0, 32); }
-    if (array_key_exists("page_url", $body)) { $fields[] = "page_url = :page_url"; $params[":page_url"] = $body["page_url"]; }
-    if (array_key_exists("client_ts", $body)) { $fields[] = "client_ts = :client_ts"; $params[":client_ts"] = $body["client_ts"] === null ? null : (int)$body["client_ts"]; }
-    if (isset($body["payload"])) { $fields[] = "payload = CAST(:payload AS JSON)"; $params[":payload"] = json_encode($body["payload"], JSON_UNESCAPED_SLASHES); }
+    if (isset($validated["sid"])) { 
+        $fields[] = "sid = :sid"; 
+        $params[":sid"] = substr((string)$validated["sid"], 0, 64); 
+    }
+    if (isset($validated["event_type"])) { 
+        $fields[] = "event_type = :event_type"; 
+        $params[":event_type"] = substr((string)$validated["event_type"], 0, 32); 
+    }
+    if (array_key_exists("page_url", $validated)) { 
+        $fields[] = "page_url = :page_url"; 
+        $params[":page_url"] = $validated["page_url"]; 
+    }
+    if (array_key_exists("client_ts", $validated)) { 
+        $fields[] = "client_ts = :client_ts"; 
+        $params[":client_ts"] = $validated["client_ts"] === null ? null : (int)$validated["client_ts"]; 
+    }
+    if (isset($validated["payload"])) { 
+        $fields[] = "payload = CAST(:payload AS JSON)"; 
+        $params[":payload"] = json_encode($validated["payload"], JSON_UNESCAPED_SLASHES); 
+    }
 
     if (count($fields) === 0) json_response(["error" => "No updatable fields provided"], 400);
 

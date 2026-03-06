@@ -23,11 +23,14 @@ if($raw === false || trim($raw) === ""){
     exit();
 }
 $data = json_decode($raw, true);
-if(!is_array($data)){
-    http_response_code(400);
-    echo "Invalid JSON\n";
+if(!is_array($data) || empty($data['url'])){
+    http_response_code(204);
     exit();
 }
+
+$serverTimestamp = date('Y-m-d H:i:s');
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+
 $sid = isset($data["sid"]) ? substr((string)$data["sid"],0,64) : "missing";
 $event_type = isset($data["type"]) ? substr((string)$data["type"], 0, 32) : "unknown";
 if ($event_type === null || $event_type === "") {
