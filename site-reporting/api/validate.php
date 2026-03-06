@@ -82,7 +82,7 @@ function validateQueryParams($query){
         $out['sid'] = $sid;
     }
 
-    if(isset($query['type'] && $query[$type] !== '')){
+    if(isset($query['type']) && $query[$type] !== ''){
         if(!in_array($query_type['type'], $allowedTypes, true)) return null;
         $out['type'] = $query['type'];
     }
