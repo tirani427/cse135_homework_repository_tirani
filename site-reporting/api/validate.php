@@ -12,7 +12,7 @@ function validateBeacon($data){
 
     return [
         'url' => sanitize($data['url'], 2048),
-        'type' => (isset($data['type']) && in_array($data['type'], $allowedTypes)) ? data['type'] : 'pageview',
+        'type' => (isset($data['type']) && in_array($data['type'], $allowedTypes)) ? $data['type'] : 'pageview',
         'userAgent' => sanitize($data['userAgent'] ?? '', 512),
         'viewportHeight' => clampInt($data['viewportHeight'] ?? null, 0, 32767),
         'viewportWidth' => clampInt($data['viewportWidth'] ?? null, 0, 32767),
@@ -82,8 +82,8 @@ function validateQueryParams($query){
         $out['sid'] = $sid;
     }
 
-    if(isset($query['type']) && $query[$type] !== ''){
-        if(!in_array($query_type['type'], $allowedTypes, true)) return null;
+    if(isset($query['type']) && $query['type'] !== ''){
+        if(!in_array($query['type'], $allowedTypes, true)) return null;
         $out['type'] = $query['type'];
     }
 
@@ -102,7 +102,7 @@ function validateQueryParams($query){
     return $out;
 }
 
-function validateID($id){
+function validateId($id){
     if(!is_string($id) && !is_int($id)) return null;
 
     $id = (string)$id;
@@ -150,7 +150,7 @@ function isISO8601($str){
 
 function sanitizeId($str, $maxLen){
     $str = substr((string)$str, 0, $maxLen);
-    return preg_replaced('/[^a-zA-Z0-9\-_]/', '', $str);
+    return preg_replace('/[^a-zA-Z0-9\-_]/', '', $str);
 }
 
 ?>
