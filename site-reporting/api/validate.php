@@ -39,7 +39,7 @@ function validateEventUpdate($data){
         $out["event_type"] = $data["event_type"];
     }
 
-    if(array_key_exists("page_url"), $data){
+    if(array_key_exists("page_url", $data)){
         if($data["page_url"] !== null){
             if(!is_string($data["page_url"]) || !preg_match('/^https?:\/\/.{1,2048}$/', $data["page_url"])){
                 return null;
