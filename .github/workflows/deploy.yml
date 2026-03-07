@@ -41,6 +41,7 @@ jobs:
       - name: Deploy reporting site
         run: |
           rsync -av --delete \
+            --exclude 'logs/' \
             --exclude ".git/" \
             --exclude ".github/" \
             ./site-reporting/ \
