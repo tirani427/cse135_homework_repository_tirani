@@ -7,6 +7,7 @@ header("Access-Control-Allow-Headers: Content-Type");
 if($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(204); exit(); }
 
 require_once 'validate.php';
+require_once 'sessionize.php';
 
 $cfg = require "/etc/cse135/collector_db.php";
 
@@ -122,6 +123,10 @@ if ($method === "POST") {
         json_encode($validated, JSON_UNESCAPED_SLASHES) . "\n",
         FILE_APPEND | LOCK_EX
     );
+
+    if ($validated["type"] === "pageview") {
+        sessionize($pdo, $validated);
+    }
 
     $sid = isset($validated["sessionId"]) ? substr((string)$validated["sessionId"], 0, 64) : null;
     $eventType = isset($validated["type"]) ? substr((string)$validated["type"], 0, 32) : null;
