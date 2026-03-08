@@ -27,39 +27,52 @@ function validateEventUpdate($data){
     if(!is_array($data)) return null;
 
     $out = [];
+    $allowedTypes = ['pageview', 'event', 'error', 'performance'];
 
-    if(isset($data["sid"])){
-        $sid = sanitizeId($data["sid"], 64);
+    if(isset($data["session_id"])){
+        $sid = sanitizeId($data["session_id"], 64);
         if($sid === '') return null;
-        $out["sid"] = $sid;
+        $out["session_id"] = $sid;
     }
-    if(isset($data["event_type"])){
-        $allowedTypes = ['pageview', 'event', 'error', 'performance'];
-        if(!in_array($data["event_type"], $allowedTypes, true)) return null;
-        $out["event_type"] = $data["event_type"];
+    if(isset($data["event_name"])){
+        if(!in_array($data["event_name"], $allowedTypes, true)) return null;
+        $out["event_name"] = $data["event_name"];
     }
-
-    if(array_key_exists("page_url", $data)){
-        if($data["page_url"] !== null){
-            if(!is_string($data["page_url"]) || !preg_match('/^https?:\/\/.{1,2048}$/', $data["page_url"])){
+    if(array_key_exists($data["event_category"], $data)){
+        if($data["event_category"] === ''){
+            return null;
+        } else {
+            $category = sanitize($data["event_category"], 128);
+            if($category === '') return null;
+            $out["event_category"] = $category;
+        }
+    }
+    if(array_key_exists($data["event_data"], $data)){
+        $json = json_encode($data["event_data"], JSON_UNESCAPED_SLASHES);
+        if($json === false || strlen($json) > 65535){
+            return null;
+        }
+        $out["event_data"] = $data["event_data"];
+    }
+    if(array_key_exists("url", $data)){
+        if($data["url"] !== null){
+            if(!is_string($data["url"]) || !preg_match('/^https?:\/\/.{1,2048}$/', $data["url"])){
                 return null;
             }
-            $out["page_url"] = sanitize($data["page_url"], 2048);
+            $out["url"] = sanitize($data["url"], 2048);
         } else {
             $out["page_url"] = null;
         }
     }
-    if(array_key_exists("client_ts", $data)){
-        $out["client_ts"] = $data["client_ts"] === null ? null : clampInt($data["client_ts"], 0, 2147483647);
-        if($data["client_ts"] !== null && $out["client_ts"] === null){
-            return null;
+    if(array_key_exists("server_timestamp", $data)){
+        if($data["server_timestamp"] === null){
+            $out["server-timestamp"] = null;
+        } else {
+            if(!isISO8601($data["server_timestamp"])){
+                return null;
+            }
+            $out["server_timestamp"] = $data["server_timestamp"];
         }
-    }
-
-    if(array_key_exists("payload", $data)){
-        $json = json_encode($data["payload"]);
-        if($json === false || strlen($json) > 65535) return null;
-        $out["payload"] = $data["payload"];
     }
     return count($out) > 0 ? $out : null;
 }
@@ -70,21 +83,21 @@ function validateQueryParams($query){
     $allowedTypes = ['pageview','event','error','performance'];
 
     $out = [
-        'sid' => null,
-        'type' => null,
+        'session_id' => null,
+        'event_name' => null,
         'limit' => 100,
         'offset' => 0
     ];
 
-    if(isset($query['sid']) && $query['sid'] !== ''){
-        $sid = sanitizeId($query['sid'],64);
-        if($sid === '') return null;
-        $out['sid'] = $sid;
+    if(isset($query['session_id']) && $query['session_id'] !== ''){
+        $sessionId = sanitizeId($query['session_id'],64);
+        if($sessionId === '') return null;
+        $out['session_id'] = $sessionId;
     }
 
-    if(isset($query['type']) && $query['type'] !== ''){
-        if(!in_array($query['type'], $allowedTypes, true)) return null;
-        $out['type'] = $query['type'];
+    if(isset($query['event_name']) && $query['event_name'] !== ''){
+        if(!in_array($query['event_name'], $allowedTypes, true)) return null;
+        $out['event_name'] = $query['event_name'];
     }
 
     if(isset($query['limit']) && $query['limit'] !== ''){
