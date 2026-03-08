@@ -27,6 +27,12 @@ function read_json_body(){
     return is_array($data) ? $data : null;
 }
 
+function requireAuth(): void {
+    if(empty($_SESSION['user'])){
+        json_response(['success' => false, 'error' => 'Authentification required']);
+    }
+}
+
 try {
   $pdo = new PDO(
     $cfg["dsn"], $cfg["user"], $cfg["pass"],
@@ -80,7 +86,7 @@ if($method === 'POST' && $route === 'login'){
     // handle login...
     $body = read_json_body();
     if($body === null){
-        json_response(['success' => false, 'error' => "Invalid JSON body"]);
+        json_response(['success' => false, 'error' => "Invalid JSON body"], 400);
     }
 
     $email = $body['email'] ?? '';

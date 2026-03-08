@@ -1,11 +1,5 @@
 <?php
 
-function requireAuth(): void {
-    if(empty($_SESSION['user'])){
-        jsonResponse(['success' => false, 'error' => 'Authentification required']);
-    }
-}
-
 function authenticate(PDO $pdo, string $email, string $password): ?array {
     if($email === '' || $password === ''){
         return null;
@@ -25,7 +19,7 @@ function authenticate(PDO $pdo, string $email, string $password): ?array {
     $stmt->execute([':email' => $email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if(!user){
+    if(!$user){
         return null;
     }
 
