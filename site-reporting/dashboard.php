@@ -129,7 +129,7 @@ if (!isset($_SESSION['user'])) {
         <a href="/dashboard.php" class="active">Overview</a>
         <a href="/speed-reporting.php">Performance</a>
         <a href="/error-report.php">Errors</a>
-        <a href="#/admin">Admin</a>
+        <a href="/admin-report.php">Admin</a>
     </nav>
 
     <main class="main">
