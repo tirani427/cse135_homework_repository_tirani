@@ -53,42 +53,207 @@ try{
         ]
     );
 
-    if($event_type === "activity_batch" && isset($data["events"]) && is_array($data["events"])){
+    if ($event_type === "activity_batch" && isset($data["events"]) && is_array($data["events"])) {
         $stmt = $pdo->prepare("
-        INSERT INTO events (sid, event_type, page_url, client_ts, payload) 
-        VALUES (:sid, :event_type, :page_url, :client_ts, CAST(:payload AS JSON))
+            INSERT INTO events (
+                session_id,
+                event_name,
+                event_category,
+                event_data,
+                url,
+                server_timestamp
+            )
+            VALUES (
+                :session_id,
+                :event_name,
+                :event_category,
+                CAST(:event_data AS JSON),
+                :url,
+                :server_timestamp
+            )
         ");
 
-        foreach($data["events"] as $event){
+        foreach ($data["events"] as $event) {
             $rowType = "activity";
-            if(is_array($event) && isset($event["kind"])){
-                $rowType = "activity_" . substr((string)$event["kind"],0,24);
+            if (is_array($event) && isset($event["kind"])) {
+                $rowType = "activity_" . substr((string)$event["kind"], 0, 24);
             }
+
             $rowTs = $client_ts;
-            if(is_array($event) && isset($event["ts"])){
+            if (is_array($event) && isset($event["ts"])) {
                 $rowTs = (int)$event["ts"];
             }
 
+            $eventData = [
+                "client_ts" => $rowTs,
+                "event" => $event
+            ];
+
             $stmt->execute([
-                ":sid" => $sid,
-                ":event_type" => $rowType,
-                ":page_url" => $page_url,
-                ":client_ts" => $rowTs,
-                ":payload" => json_encode($event, JSON_UNESCAPED_SLASHES)
+                ":session_id" => substr((string)$sid, 0, 36),
+                ":event_name" => substr((string)$rowType, 0, 128),
+                ":event_category" => "activity",
+                ":event_data" => json_encode($eventData, JSON_UNESCAPED_SLASHES),
+                ":url" => $page_url,
+                ":server_timestamp" => $serverTimestamp
             ]);
         }
     } else {
         $stmt = $pdo->prepare("
-        INSERT INTO events (sid, event_type, page_url, client_ts, payload)
-        VALUES (:sid, :event_type, :page_url, :client_ts, CAST(:payload AS JSON))
+            INSERT INTO events (
+                session_id,
+                event_name,
+                event_category,
+                event_data,
+                url,
+                server_timestamp
+            )
+            VALUES (
+                :session_id,
+                :event_name,
+                :event_category,
+                CAST(:event_data AS JSON),
+                :url,
+                :server_timestamp
+            )
         ");
 
+        $eventData = [
+            "client_ts" => $client_ts,
+            "raw" => $data
+        ];
+
         $stmt->execute([
-            ":sid" => $sid,
-            ":event_type" => $event_type,
-            ":page_url" => $page_url,
-            ":client_ts" => $client_ts,
+            ":session_id" => substr((string)$sid, 0, 36),
+            ":event_name" => substr((string)$event_type, 0, 128),
+            ":event_category" => null,
+            ":event_data" => json_encode($eventData, JSON_UNESCAPED_SLASHES),
+            ":url" => $page_url,
+            ":server_timestamp" => $serverTimestamp
+        ]);
+    }
+    if ($event_type === "pageview") {
+        $stmtPv = $pdo->prepare("
+            INSERT INTO pageviews (
+                url,
+                type,
+                user_agent,
+                viewport_width,
+                viewport_height,
+                referrer,
+                client_timestamp,
+                server_timestamp,
+                client_ip,
+                session_id,
+                payload
+            ) VALUES (
+                :url,
+                :type,
+                :user_agent,
+                :viewport_width,
+                :viewport_height,
+                :referrer,
+                :client_timestamp,
+                :server_timestamp,
+                :client_ip,
+                :session_id,
+                CAST(:payload AS JSON)
+            )
+        ");
+
+        $stmtPv->execute([
+            ":url" => $page_url,
+            ":type" => $event_type,
+            ":user_agent" => isset($data["userAgent"]) ? substr((string)$data["userAgent"], 0, 512) : null,
+            ":viewport_width" => isset($data["viewportWidth"]) ? (int)$data["viewportWidth"] : null,
+            ":viewport_height" => isset($data["viewportHeight"]) ? (int)$data["viewportHeight"] : null,
+            ":referrer" => isset($data["referrer"]) ? substr((string)$data["referrer"], 0, 2048) : null,
+            ":client_timestamp" => $client_ts,
+            ":server_timestamp" => $serverTimestamp,
+            ":client_ip" => substr((string)$clientIp, 0, 45),
+            ":session_id" => substr((string)$sid, 0, 36),
             ":payload" => json_encode($data, JSON_UNESCAPED_SLASHES)
+        ]);
+    }
+    if ($event_type === "error") {
+        $payload = $data["payload"] ?? $data;
+
+        $stmtErr = $pdo->prepare("
+            INSERT INTO errors (
+                session_id,
+                error_message,
+                error_source,
+                error_line,
+                error_column,
+                stack_trace,
+                url,
+                user_agent,
+                server_timestamp
+            ) VALUES (
+                :session_id,
+                :error_message,
+                :error_source,
+                :error_line,
+                :error_column,
+                :stack_trace,
+                :url,
+                :user_agent,
+                :server_timestamp
+            )
+        ");
+
+        $stmtErr->execute([
+            ":session_id" => substr((string)$sid, 0, 36),
+            ":error_message" => isset($payload["message"]) ? substr((string)$payload["message"], 0, 1024) : "Unknown error",
+            ":error_source" => isset($payload["source"]) ? substr((string)$payload["source"], 0, 2048) : null,
+            ":error_line" => isset($payload["line"]) ? (int)$payload["line"] : null,
+            ":error_column" => isset($payload["column"]) ? (int)$payload["column"] : null,
+            ":stack_trace" => isset($payload["stack"]) ? (string)$payload["stack"] : null,
+            ":url" => $page_url,
+            ":user_agent" => isset($data["userAgent"]) ? substr((string)$data["userAgent"], 0, 512) : null,
+            ":server_timestamp" => $serverTimestamp
+        ]);
+    }
+    if ($event_type === "performance") {
+        $payload = $data["payload"] ?? $data;
+
+        $stmtPerf = $pdo->prepare("
+            INSERT INTO performance (
+                session_id,
+                url,
+                user_agent,
+                load_time,
+                ttfb,
+                fcp,
+                lcp,
+                cls,
+                inp,
+                server_timestamp
+            ) VALUES (
+                :session_id,
+                :url,
+                :user_agent,
+                :load_time,
+                :ttfb,
+                :fcp,
+                :lcp,
+                :cls,
+                :inp,
+                :server_timestamp
+            )
+        ");
+
+        $stmtPerf->execute([
+            ":session_id" => substr((string)$sid, 0, 36),
+            ":url" => $page_url,
+            ":user_agent" => isset($data["userAgent"]) ? substr((string)$data["userAgent"], 0, 512) : null,
+            ":load_time" => isset($payload["load_time"]) ? (float)$payload["load_time"] : null,
+            ":ttfb" => isset($payload["ttfb"]) ? (float)$payload["ttfb"] : null,
+            ":fcp" => isset($payload["fcp"]) ? (float)$payload["fcp"] : null,
+            ":lcp" => isset($payload["lcp"]) ? (float)$payload["lcp"] : null,
+            ":cls" => isset($payload["cls"]) ? (float)$payload["cls"] : null,
+            ":inp" => isset($payload["inp"]) ? (float)$payload["inp"] : null,
+            ":server_timestamp" => $serverTimestamp
         ]);
     }
     http_response_code(204);
