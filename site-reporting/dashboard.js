@@ -216,9 +216,9 @@
             a.classList.toggle('active', a.getAttribute('href') === hash);
         });
         if (hash.startsWith('#/overview')) renderOverview();
-        if (hash.startsWith('#/performance')) renderPerformance();
-        if (hash.startsWith('#/errors')) renderErrors();
-        if (hash.startsWith('#/admin')) renderAdmin();
+        // if (hash.startsWith('#/performance')) renderPerformance();
+        // if (hash.startsWith('#/errors')) renderErrors();
+        // if (hash.startsWith('#/admin')) renderAdmin();
         // Other routes would go here (performance, errors, admin)
     }
 
@@ -238,8 +238,9 @@
     // Init
     async function init() {
         if (await checkAuth()) {
-            window.addEventListener('hashchange', route);
-            route();
+            // window.addEventListener('hashchange', route);
+            // route();
+            renderOverview();
         }
     }
 
