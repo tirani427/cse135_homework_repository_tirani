@@ -1,26 +1,27 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Max-Age: 86400");
 
-if($_SERVER["REQUEST_METHOD"] === "OPTIONS"){
+if (($_SERVER["REQUEST_METHOD"] ?? "") === "OPTIONS") {
     http_response_code(204);
     exit();
 }
 
-if($_SERVER["REQUEST_METHOD"] !== "POST"){
+if (($_SERVER["REQUEST_METHOD"] ?? "") !== "POST") {
     http_response_code(405);
     echo "Method Not Allowed\n";
     exit();
 }
 
 $raw = file_get_contents("php://input");
-if($raw === false || trim($raw) === ""){
+if ($raw === false || trim($raw) === "") {
     http_response_code(400);
     echo "Empty body\n";
     exit();
 }
+
 $data = json_decode($raw, true);
 if(!is_array($data) || empty($data['url'])){
     http_response_code(204);
