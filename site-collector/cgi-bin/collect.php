@@ -4,14 +4,6 @@ header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: text/plain; charset=utf-8");
 
-echo "REQUEST_METHOD: " . ($_SERVER["REQUEST_METHOD"] ?? "missing") . "\n";
-echo "CONTENT_TYPE: " . ($_SERVER["CONTENT_TYPE"] ?? "missing") . "\n";
-echo "CONTENT_LENGTH: " . ($_SERVER["CONTENT_LENGTH"] ?? "missing") . "\n";
-
-$raw = file_get_contents("php://input");
-echo "RAW LEN: " . strlen($raw ?: "") . "\n";
-echo "RAW BODY: " . $raw . "\n";
-
 if($_SERVER["REQUEST_METHOD"] === "OPTIONS"){
     http_response_code(204);
     exit();
@@ -38,7 +30,9 @@ if(!is_array($data) || empty($data['url'])){
 $serverTimestamp = date('Y-m-d H:i:s');
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
 
-$sid = isset($data["sid"]) ? substr((string)$data["sid"], 0, 36) : "missing";
+$sid = isset($data["sid"])
+    ? substr((string)$data["sid"], 0, 36)
+    : (isset($data["session"]) ? substr((string)$data["session"], 0, 36) : "missing");
 $event_type = isset($data["type"]) ? substr((string)$data["type"], 0, 32) : "unknown";
 if ($event_type === "") {
     $event_type = "unknown";
@@ -140,6 +134,8 @@ try{
         ]);
     }
     if ($event_type === "pageview") {
+        $tech = isset($data["technographics"]) && is_array($data["technographics"]) ? $data["technographics"] : [];
+
         $stmtPv = $pdo->prepare("
             INSERT INTO pageviews (
                 url,
@@ -171,9 +167,9 @@ try{
         $stmtPv->execute([
             ":url" => $page_url,
             ":type" => $event_type,
-            ":user_agent" => isset($data["userAgent"]) ? substr((string)$data["userAgent"], 0, 512) : null,
-            ":viewport_width" => isset($data["viewportWidth"]) ? (int)$data["viewportWidth"] : null,
-            ":viewport_height" => isset($data["viewportHeight"]) ? (int)$data["viewportHeight"] : null,
+            ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
+            ":viewport_width" => isset($tech["viewportWidth"]) ? (int)$tech["viewportWidth"] : null,
+            ":viewport_height" => isset($tech["viewportHeight"]) ? (int)$tech["viewportHeight"] : null,
             ":referrer" => isset($data["referrer"]) ? substr((string)$data["referrer"], 0, 2048) : null,
             ":client_timestamp" => $client_ts,
             ":server_timestamp" => $serverTimestamp,
@@ -183,7 +179,7 @@ try{
         ]);
     }
     if ($event_type === "error") {
-        $payload = $data["payload"] ?? $data;
+        $payload = (isset($data["error"]) && is_array($data["error"])) ? $data["error"] : $data;
 
         $stmtErr = $pdo->prepare("
             INSERT INTO errors (

@@ -125,23 +125,23 @@ if($method === 'POST' && $route === 'logout'){
 // -----------------------------------------------
 
 if($method === 'GET' && $route === 'dashboard'){
-    //handle dashboard...
     requireAuth();
 
-    $start = $_GET["start"] ?? date("Y-m-01 00:00:00");
-    $end = $_GET["end"] ?? date("Y-m-d 23:59:59");
+    $start = ($_GET["start"] ?? date("Y-m-01")) . " 00:00:00";
+    $end = ($_GET["end"] ?? date("Y-m-d")) . " 23:59:59";
 
     $stmt = $pdo->prepare('
     SELECT
         (SELECT COUNT(*) FROM pageviews
-        WHERE server_timestamp BETWEEN ? AND ?
-        AND type = "pageview") AS total_pageviews,
+         WHERE server_timestamp BETWEEN ? AND ?
+           AND type = "pageview") AS total_pageviews,
         (SELECT COUNT(DISTINCT session_id) FROM pageviews
-        WHERE server_timestamp BETWEEN ? AND ?) AS total_sessions,
+         WHERE server_timestamp BETWEEN ? AND ?
+           AND type = "pageview") AS total_sessions,
         (SELECT ROUND(AVG(load_time)) FROM performance
-        WHERE server_timestamp BETWEEN ? AND ?) AS avg_load_time_ms,
+         WHERE server_timestamp BETWEEN ? AND ?) AS avg_load_time_ms,
         (SELECT COUNT(*) FROM errors
-        WHERE server_timestamp BETWEEN ? AND ?) AS total_errors
+         WHERE server_timestamp BETWEEN ? AND ?) AS total_errors
     ');
     $stmt->execute([$start, $end, $start, $end, $start, $end, $start, $end]);
     $row = $stmt->fetch();
