@@ -276,7 +276,7 @@ if (!isset($_SESSION['user'])) {
                     return;
                 }
 
-                var byMessage = json.data.frequency || [];
+                var byMessage = json.data.byMessage || [];
                 var trend = json.data.trend || [];
 
                 renderSummary(byMessage);
@@ -290,7 +290,7 @@ if (!isset($_SESSION['user'])) {
         function renderSummary(byMessage) {
             var total = 0;
             for (var i = 0; i < byMessage.length; i++) {
-                total += byMessage[i].count || 0;
+                total += byMessage[i].occurrences || 0;
             }
             document.getElementById('totalErrors').textContent =
                 total.toLocaleString();

@@ -428,23 +428,23 @@ if($method === 'GET' && $route === 'errors'){
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
 
-    $frequency_stmt = $pdo->prepare("
+    $byMessage_stmt = $pdo->prepare("
         SELECT
             error_message,
-            COUNT (*) AS count,
+            COUNT (*) AS occurrences,
             MAX(server_timestamp) AS last_seen
         FROM errors
         WHERE server_timestamp BETWEEN :start AND :end
         GROUP BY error_message
-        ORDER BY count DESC, last_seen DESC
+        ORDER BY occurrences DESC, last_seen DESC
         LIMIT 20
     ");
-    frequency_stmt->execute([
+    $byMessage->execute([
         ':start' => $start,
         ':end' => $end
     ]);
 
-    $frequency = $frequency_stmt->fetchAll();
+    $byMessage = $byMessage_stmt->fetchAll();
 
     $trend_stmt = $pdo->prepare("
         SELECT
@@ -465,10 +465,10 @@ if($method === 'GET' && $route === 'errors'){
     json_response([
         'success' => true,
         'data' => [
-            'frequency' => $frequency,
+            'byMessage' => $byMessage,
             'trend' => $trend
         ]
-    ]);
+    ], 200);
 }
 
 // ------------------------------------------------
