@@ -29,7 +29,7 @@ function read_json_body(){
 
 function requireAuth(): void {
     if(empty($_SESSION['user'])){
-        json_response(['success' => false, 'error' => 'Authentification required']);
+        json_response(['success' => false, 'error' => 'Authentification required'], 401);
     }
 }
 
@@ -395,7 +395,7 @@ if($method === 'GET' && $route === 'performance'){
     $stmt = $pdo->prepare("
         SELECT
             url,
-            COUNT (*) AS samples,
+            COUNT(*) AS samples,
             ROUND(AVG(load_time), 2) AS avg_load_time,
             ROUND(AVG(ttfb),2) AS avg_ttfb,
             ROUND(AVG(lcp), 2) AS avg_lcp,
@@ -432,7 +432,7 @@ if($method === 'GET' && $route === 'errors'){
     $byMessage_stmt = $pdo->prepare("
         SELECT
             error_message,
-            COUNT (*) AS occurrences,
+            COUNT(*) AS occurrences,
             MAX(server_timestamp) AS last_seen
         FROM errors
         WHERE server_timestamp BETWEEN :start AND :end
