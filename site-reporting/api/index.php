@@ -33,6 +33,18 @@ function requireAuth(): void {
     }
 }
 
+function requireRole(array $allowedRoles): void {
+    requireAuth();
+
+    $role = $_SESSION['user']['role'] ?? null;
+    if(!in_array($role, $allowedRoles, true)){
+        json_response([
+            'success' => false,
+            'error' => 'Insufficient permissions'
+        ], 403);
+    }
+}
+
 try {
   $pdo = new PDO(
     $cfg["dsn"], $cfg["user"], $cfg["pass"],
@@ -135,6 +147,10 @@ if($method === 'GET' && $route === 'dashboard'){
 
     json_response(["success" => true, "data" => $row], 200);
 }
+
+// ------------------------------------------------
+// EVENTS 
+// ------------------------------------------------
 
 if($method === "GET" && $route === 'events'){
     if($id !== null){
@@ -316,33 +332,35 @@ if ($method === "DELETE" && $route === 'events') {
     json_response(["deleted" => $stmt->rowCount()], 200);
 }
 
+// ------------------------------------------------
+// PAGEVIEWS 
+// ------------------------------------------------
 
-if($method === 'GET' && $route === 'pageviews'){
-    //handle pageviews
+if ($method === 'GET' && $route === 'pageviews') {
     requireAuth();
 
-    $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
-    $end = $_GET['end'] ?? date('Y-m-d H:i:s');
+    $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
+    $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
 
-    $trendStmt = $pdo->prepare("
-        SELECT DATE(server_timestamp) AS day, COUNT(*) AS pageviews
+    $byDayStmt = $pdo->prepare("
+        SELECT DATE(server_timestamp) AS day, COUNT(*) AS views
         FROM pageviews
         WHERE server_timestamp BETWEEN :start AND :end
           AND type = 'pageview'
         GROUP BY DATE(server_timestamp)
         ORDER BY day
     ");
-    $trendStmt->execute([
+    $byDayStmt->execute([
         ':start' => $start,
         ':end' => $end
     ]);
-    $trend = $trendStmt->fetchAll();
+    $byDay = $byDayStmt->fetchAll();
 
     $topPagesStmt = $pdo->prepare("
         SELECT url, COUNT(*) AS views
         FROM pageviews
         WHERE server_timestamp BETWEEN :start AND :end
-         AND type = 'pageview'
+          AND type = 'pageview'
         GROUP BY url
         ORDER BY views DESC
         LIMIT 20
@@ -356,15 +374,19 @@ if($method === 'GET' && $route === 'pageviews'){
     json_response([
         'success' => true,
         'data' => [
-            'trend' => $trend,
+            'byDay' => $byDay,
             'topPages' => $topPages
         ]
-    ]);
+    ], 200);
 }
+
+// ------------------------------------------------
+// PERFORMANCE 
+// ------------------------------------------------
 
 if($method === 'GET' && $route === 'performance'){
     //handle performance
-    requireAuth();
+    requireRole(['owner', 'admin', 'viewer']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -395,9 +417,13 @@ if($method === 'GET' && $route === 'performance'){
         'data' => $stmt->fetchAll()]);
 }
 
+// ------------------------------------------------
+// ERRORS 
+// ------------------------------------------------
+
 if($method === 'GET' && $route === 'errors'){
     //handle errors
-    requireAuth();
+    requireRole(['owner', 'admin', 'viewer']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -445,9 +471,13 @@ if($method === 'GET' && $route === 'errors'){
     ]);
 }
 
+// ------------------------------------------------
+// SESSIONS 
+// ------------------------------------------------
+
 if($method === 'GET' && $route === 'sessions'){
     //handle sessions
-    requireAuth();
+    requireRole(['owner', 'admin', 'viewer']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -494,6 +524,295 @@ if($method === 'GET' && $route === 'sessions'){
     ]);
 }
 
+// ------------------------------------------------
+// DAILY_SUMMARY 
+// ------------------------------------------------
 
+if ($method === 'GET' && $route === 'dashboard') {
+    requireAuth();
+
+    $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
+    $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
+
+    $stmt = $pdo->prepare("
+        SELECT
+            (SELECT COUNT(*) FROM pageviews
+             WHERE server_timestamp BETWEEN ? AND ?
+               AND type = 'pageview') AS total_pageviews,
+            (SELECT COUNT(DISTINCT session_id) FROM pageviews
+             WHERE server_timestamp BETWEEN ? AND ?) AS total_sessions,
+            (SELECT ROUND(AVG(load_time)) FROM performance
+             WHERE server_timestamp BETWEEN ? AND ?) AS avg_load_time_ms,
+            (SELECT COUNT(*) FROM errors
+             WHERE server_timestamp BETWEEN ? AND ?) AS total_errors
+    ");
+
+    $stmt->execute([$start, $end, $start, $end, $start, $end, $start, $end]);
+    $row = $stmt->fetch();
+
+    json_response([
+        'success' => true,
+        'data' => $row
+    ], 200);
+}
+
+// ------------------------------------------------
+// USERS
+// ------------------------------------------------
+
+if($method === 'GET' && $route === 'users'){
+    requireRole(['owner', 'admin']);
+
+    if($id !== null){
+        $stmt = $pdo->prepare("
+            SELECT id, email, display_name, role, created_at, last_login
+            FROM users
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $id]);
+        $user = $stmt->fetch();
+
+        if(!$user){
+            json_response([
+                'success' => false,
+                'error' => "User not found"
+            ], 404);
+        }
+        json_response(['success' => true, 'data' => $user], 200);
+    }
+
+    $stmt = $pdo->query("
+        SELECT id, email, display_name, role, created_at, last_login
+        FROM users
+        ORDER BY created_at DESC
+    ");
+    json_response([
+        'success' => true,
+        'data' => $stmt->fetchAll()
+    ]), 200;
+}
+
+if($method === 'POST' && $route === 'users'){
+    requireRole(['owner', 'admin']);
+
+    $body = read_json_body();
+    if($body === null){
+        json_response([
+            'success' => false,
+            'error' => 'Invalid JSON body'
+        ]);
+    }
+
+    $email = trim($body['email'] ?? '');
+    $password = $body['password'] ?? '';
+    $display_name = trim($body['display_name'] ?? '');
+    $role = $body['role'] ?? 'viewer';
+
+    if($email === '' || $password === ''){
+        json_response([
+            'success' => false,
+            'error' => "Email and password required"
+        ], 400);
+    }
+
+    if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+        json_response([
+            'success' => false,
+            'error' => 'Invalid email'
+        ], 400);
+    }
+
+    if(!in_array($role, ['owner', 'admin', 'viewer'], true)){
+        json_response([
+            'success' => false,
+            'error' => 'Invalid role'
+        ], 400);
+    }
+
+    if(($_SESSION['user']['role'] ?? '') !== 'owner' && $role === 'owner'){
+        json_response([
+            'success' => false,
+            'error' => 'Cannot create owner account'
+        ], 403);
+    }
+
+    $checkStmt = $pdo->prepare("
+        SELECT id FROM users WHERE email = :email LIMIT 1
+    ");
+    $checkStmt->execute([':email' => $email]);
+    if($checkStmt->fetch()){
+        json_response([
+            'success' => false,
+            'error' => 'Account cannot be created'
+        ], 409);
+    }
+
+    $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+
+    $stmt = $pdo->prepare("
+        INSERT INTO users (email, password_hash, display_name, role)
+        VALUES (:email, :password_hash, :display_name, :role)
+    ");
+    $stmt->execute([
+        ':email' => $email,
+        ':password_hash' => $password_hash,
+        ':display_name' => $display_name !== '' ? $display_name : null,
+        ':role' => $role
+    ]);
+
+    json_response([
+        'success' => true,
+        'data' => [
+            'id' => (int)$pdo->lastInsertId(),
+            'email' => $email,
+            'display_name' => $display_name !== '' ? $display_name : null,
+            'role' => $role
+        ]
+    ], 201);
+}
+
+if ($route === 'users' && $method === 'PUT') {
+    requireRole(['owner', 'admin']);
+
+    if ($id === null) {
+        json_response([
+            'success' => false, 
+            'error' => 'PUT requires user id'
+        ], 400);
+    }
+
+    $body = read_json_body();
+    if ($body === null) {
+        json_response([
+            'success' => false, 
+            'error' => 'Invalid JSON body'
+        ], 400);
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT id, email, role
+        FROM users
+        WHERE id = :id
+        LIMIT 1
+    ");
+    $stmt->execute([':id' => $id]);
+    $existing_user = $stmt->fetch();
+
+    if (!$existing_user) {
+        json_response(['success' => false, 'error' => 'User not found'], 404);
+    }
+
+    $current_role = $_SESSION['user']['role'] ?? '';
+
+    if ($current_role !== 'owner' && $existing_user['role'] === 'owner') {
+        json_response(['success' => false, 'error' => 'Only owner can modify owner account'], 403);
+    }
+
+    $fields = [];
+    $params = [':id' => $id];
+
+    if (array_key_exists('display_name', $body)) {
+        $fields[] = 'display_name = :display_name';
+        $display_name = trim((string)$body['display_name']);
+        $params[':display_name'] = $display_name !== '' ? $display_name : null;
+    }
+
+    if (array_key_exists('role', $body)) {
+        $new_role = $body['role'];
+
+        if (!in_array($new_role, ['owner', 'admin', 'viewer'], true)) {
+            json_response(['success' => false, 'error' => 'Invalid role'], 400);
+        }
+
+        if ($current_role !== 'owner' && $new_role === 'owner') {
+            json_response(['success' => false, 'error' => 'Only owner can assign owner role'], 403);
+        }
+
+        if ($existing_user['role'] === 'owner' && $new_role !== 'owner') {
+            json_response(['success' => false, 'error' => 'Owner account cannot be demoted'], 403);
+        }
+
+        $fields[] = 'role = :role';
+        $params[':role'] = $new_role;
+    }
+
+    if (array_key_exists('password', $body)) {
+        $password = $body['password'] ?? '';
+        if (!is_string($password) || $password === '') {
+            json_response(['success' => false, 'error' => 'Invalid password'], 400);
+        }
+
+        $fields[] = 'password_hash = :password_hash';
+        $params[':password_hash'] = password_hash($password, PASSWORD_BCRYPT);
+    }
+
+    if (count($fields) === 0) {
+        json_response(['success' => false, 'error' => 'No updatable fields provided'], 400);
+    }
+
+    $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
+    $updateStmt = $pdo->prepare($sql);
+    $updateStmt->execute($params);
+
+    json_response([
+        'success' => true,
+        'data' => ['updated' => $updateStmt->rowCount()]
+    ], 200);
+}
+
+if ($route === 'users' && $method === 'DELETE') {
+    requireRole(['owner', 'admin']);
+
+    if ($id === null) {
+        json_response(['success' => false, 'error' => 'DELETE requires user id'], 400);
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT id, email, role
+        FROM users
+        WHERE id = :id
+        LIMIT 1
+    ");
+    $stmt->execute([':id' => $id]);
+    $existing_user = $stmt->fetch();
+
+    if (!$existing_user) {
+        json_response(['success' => false, 'error' => 'User not found'], 404);
+    }
+
+    $currentUserId = $_SESSION['user']['id'] ?? null;
+    $currentRole = $_SESSION['user']['role'] ?? '';
+
+    if ($existing_user['role'] === 'owner') {
+        json_response(['success' => false, 'error' => 'Owner account cannot be deleted'], 403);
+    }
+
+    if ($currentUserId !== null && (int)$existingUser['id'] === (int)$currentUserId) {
+        json_response(['success' => false, 'error' => 'You cannot delete your own account'], 403);
+    }
+
+    $deleteStmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
+    $deleteStmt->execute([':id' => $id]);
+
+    json_response([
+        'success' => true,
+        'data' => ['deleted' => $deleteStmt->rowCount()]
+    ], 200);
+}
+
+if ($method === 'GET' && $route === 'me') {
+    if (empty($_SESSION['user'])) {
+        json_response([
+            'success' => false,
+            'error' => 'Authentication required'
+        ], 401);
+    }
+
+    json_response([
+        'success' => true,
+        'data' => $_SESSION['user']
+    ], 200);
+}
 
 json_response(["error" => "Method not allowed"], 405);

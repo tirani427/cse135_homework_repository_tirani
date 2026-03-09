@@ -86,9 +86,9 @@
             <h1>Login</h1>
             <form id="loginForm">
                 <label for="email">Email</label>
-                <input id="email" name="email" type="email" required/>
+                <input id="email" name="email" type="email" required autocomplete="email"/>
                 <label for="password">Password</label>
-                <input id="password" name="password" type="password" required/>
+                <input id="password" name="password" type="password" required autocomplete="current-password"/>
 
                 <button type="submit">Sign In</button>
             </form>
@@ -97,6 +97,7 @@
 
         </div>
         <script>
+
             const form = document.getElementById("loginForm");
             const message = document.getElementById("message");
 
@@ -130,7 +131,7 @@
                     message.textContent = "Login successful";
                     message.className = "success";
 
-                    window.location.href = "./reporting.php";
+                    window.location.href = "./dashboard.php";
                 } catch (err) {
                     message.textContent = "network or server error";
                     message.className= "error";

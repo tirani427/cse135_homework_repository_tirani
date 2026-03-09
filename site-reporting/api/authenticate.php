@@ -28,6 +28,7 @@ function authenticate(PDO $pdo, string $email, string $password): ?array {
     }
 
    return ([
+    'id' => (int)$user['id'],
     'email' => $user['email'],
     'displayName' => $user['display_name'],
     'role' => $user['role']
