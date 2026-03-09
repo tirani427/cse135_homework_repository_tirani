@@ -4,6 +4,13 @@ header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: text/plain; charset=utf-8");
 
+echo "REQUEST_METHOD: " . ($_SERVER["REQUEST_METHOD"] ?? "missing") . "\n";
+echo "CONTENT_TYPE: " . ($_SERVER["CONTENT_TYPE"] ?? "missing") . "\n";
+echo "CONTENT_LENGTH: " . ($_SERVER["CONTENT_LENGTH"] ?? "missing") . "\n";
+
+$raw = file_get_contents("php://input");
+echo "RAW LEN: " . strlen($raw ?: "") . "\n";
+echo "RAW BODY: " . $raw . "\n";
 
 if($_SERVER["REQUEST_METHOD"] === "OPTIONS"){
     http_response_code(204);
