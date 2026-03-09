@@ -439,7 +439,7 @@ if($method === 'GET' && $route === 'errors'){
         ORDER BY occurrences DESC, last_seen DESC
         LIMIT 20
     ");
-    $byMessage->execute([
+    $byMessage_stmt->execute([
         ':start' => $start,
         ':end' => $end
     ]);
