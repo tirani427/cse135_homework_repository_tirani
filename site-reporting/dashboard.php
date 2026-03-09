@@ -152,6 +152,9 @@ if (!isset($_SESSION['user'])) {
     </main>
 
     <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            loadOverview();
+        });
         const today = new Date();
         const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
 
