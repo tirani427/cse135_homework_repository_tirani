@@ -132,5 +132,6 @@ As such, please use this login information and if there is an issue, then let me
    - https://reporting.cse135tirani.site/admin-report.php
    - https://reporting.cse135tirani.site/dashboard.php
 2. Table
-   Currently, due to the fact that collection for the API endpoints for pageview, errors, performance, etc. started relatively recently, the main table shown on the overview page is obtained from the events 
+   Currently, due to the fact that collection for the API endpoints for pageview, errors, performance, etc. started relatively recently, the main table shown on the overview page is obtained from the events url and number of views.
 3. Chart
+   The chart shown on the overviews page comes from the url and number of views in the events table from the database.
