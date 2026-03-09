@@ -31,13 +31,13 @@ if(!is_array($data) || empty($data['url'])){
 $serverTimestamp = date('Y-m-d H:i:s');
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
 
-$sid = isset($data["sid"]) ? substr((string)$data["sid"],0,64) : "missing";
+$sid = isset($data["sid"]) ? substr((string)$data["sid"], 0, 36) : "missing";
 $event_type = isset($data["type"]) ? substr((string)$data["type"], 0, 32) : "unknown";
-if ($event_type === null || $event_type === "") {
-  $event_type = "unknown";
+if ($event_type === "") {
+    $event_type = "unknown";
 }
 
-$page_url = isset($data["url"]) ? (string)$data["url"] : null;
+$page_url = isset($data["url"]) ? substr((string)$data["url"], 0, 2048) : null;
 $client_ts = isset($data["ts"]) ? (int)$data["ts"] : null;
 
 $cfg = require "/etc/cse135/collector_db.php";
