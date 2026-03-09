@@ -207,7 +207,7 @@
 
     //Technographics
 
-    function getTechnographics({imagesEnabled, cssEnabled}){
+    function getTechnographics({imagesEnabled, cssEnabled} = {}){
         const data =  {
             //Browser Identification
             userAgent: navigator.userAgent,
