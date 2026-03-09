@@ -126,9 +126,9 @@ if (!isset($_SESSION['user'])) {
 <body>
     <nav class="sidebar">
         <h2>Analytics</h2>
-        <a href="#/overview" class="active">Overview</a>
-        <a href="#/performance">Performance</a>
-        <a href="#/errors">Errors</a>
+        <a href="/dashboard.php" class="active">Overview</a>
+        <a href="/speed-reporting.php">Performance</a>
+        <a href="/error-report.php">Errors</a>
         <a href="#/admin">Admin</a>
     </nav>
 
