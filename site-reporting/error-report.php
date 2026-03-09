@@ -264,7 +264,7 @@ if (!isset($_SESSION['user'])) {
                 return;
             }
 
-            var url = '/api/errors?start=' +
+            var url = '/api/index.php/errors?start=' +
                 encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
 
             try {
