@@ -1,5 +1,18 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+$allowedOrigins = [
+    'https://test.cse135tirani.site',
+    'https://cse135tirani.site',
+    'https://reporting.cse135tirani.site'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowedOrigins, true)) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Vary: Origin");
+    header("Access-Control-Allow-Credentials: true");
+}
+
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Max-Age: 86400");
