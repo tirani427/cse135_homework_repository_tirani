@@ -171,7 +171,7 @@
     document.addEventListener('click', e => {
         if (e.target.id === 'logout-btn') {
             fetch(API_BASE + '/logout', { method: 'POST', credentials: 'include' })
-                .then(() => { window.location.href = '../01-login/login.html'; });
+                .then(() => { window.location.href = '/index.html'; });
         }
     });
 
