@@ -125,7 +125,7 @@ if($method === 'POST' && $route === 'logout'){
 
 if($method === 'GET' && $route === 'dashboard'){
     //handle dashboard...
-    require_auth();
+    requireAuth();
 
     $start = $_GET["start"] ?? date("Y-m-01 00:00:00");
     $end = $_GET["end"] ?? date("Y-m-d H:i:s");
@@ -386,7 +386,7 @@ if ($method === 'GET' && $route === 'pageviews') {
 
 if($method === 'GET' && $route === 'performance'){
     //handle performance
-    requireRole(['owner', 'admin', 'viewer']);
+    requireAuth();
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -423,7 +423,7 @@ if($method === 'GET' && $route === 'performance'){
 
 if($method === 'GET' && $route === 'errors'){
     //handle errors
-    requireRole(['owner', 'admin', 'viewer']);
+    requireAuth();
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -477,7 +477,7 @@ if($method === 'GET' && $route === 'errors'){
 
 if($method === 'GET' && $route === 'sessions'){
     //handle sessions
-    requireRole(['owner', 'admin', 'viewer']);
+    requireAuth();
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -525,7 +525,7 @@ if($method === 'GET' && $route === 'sessions'){
 }
 
 // ------------------------------------------------
-// DAILY_SUMMARY 
+// DASHBOARD
 // ------------------------------------------------
 
 if ($method === 'GET' && $route === 'dashboard') {
