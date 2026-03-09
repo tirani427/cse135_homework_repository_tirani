@@ -590,7 +590,7 @@ if($method === 'GET' && $route === 'users'){
     json_response([
         'success' => true,
         'data' => $stmt->fetchAll()
-    ]), 200;
+    ], 200);
 }
 
 if($method === 'POST' && $route === 'users'){
