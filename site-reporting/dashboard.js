@@ -156,6 +156,58 @@
         }
     }
 
+    async function renderErrors() {
+        const content = document.getElementById('content');
+        content.innerHTML = `
+            <div class="panel">
+                <h2>Error Trend</h2>
+                <canvas id="errors-chart" style="width:100%;margin:20px 0;"></canvas>
+            </div>
+            <div class="panel">
+                <h2>Top Errors</h2>
+                <div id="errors-table"></div>
+            </div>
+        `;
+
+        const errors = await api('/errors');
+        if (!errors) return;
+
+        renderLineChart(
+            document.getElementById('errors-chart'),
+            errors.trend || [],
+            'day',
+            'error_count'
+        );
+
+        const container = document.getElementById('errors-table');
+        container.innerHTML = '';
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Error Message</th>
+                    <th>Occurrences</th>
+                    <th>Last Seen</th>
+                </tr>
+            </thead>
+        `;
+
+        const tbody = document.createElement('tbody');
+        (errors.byMessage || []).forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.error_message || ''}</td>
+                <td>${Number(row.occurrences || 0).toLocaleString()}</td>
+                <td>${row.last_seen || ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+    }
+
     // Router
     function route() {
         const hash = window.location.hash || '#/overview';
@@ -164,6 +216,9 @@
             a.classList.toggle('active', a.getAttribute('href') === hash);
         });
         if (hash.startsWith('#/overview')) renderOverview();
+        if (hash.startsWith('#/performance')) renderPerformance();
+        if (hash.startsWith('#/errors')) renderErrors();
+        if (hash.startsWith('#/admin')) renderAdmin();
         // Other routes would go here (performance, errors, admin)
     }
 
