@@ -146,67 +146,45 @@
     // Overview view
     async function renderOverview() {
         const content = document.getElementById('content');
-        content.innerHTML = '<div id="cards" class="cards-grid"></div><canvas id="chart" style="width:100%;margin:20px 0;"></canvas><div id="top-pages"></div>';
+        if (!content) {
+            console.error('Missing #content element');
+            return;
+        }
 
-        const [dashboard, pageviews] = await Promise.all([api('/dashboard'), api('/pageviews')]);
+        content.innerHTML = `
+            <div id="cards" class="cards-grid"></div>
+            <canvas id="chart" style="width:100%;margin:20px 0;"></canvas>
+            <div id="top-pages"></div>
+        `;
+
+        const [dashboard, pageviews] = await Promise.all([
+            api('/dashboard'),
+            api('/pageviews')
+        ]);
+
+        console.log('dashboard:', dashboard);
+        console.log('pageviews:', pageviews);
+
         if (dashboard) renderCards(dashboard);
+
         if (pageviews) {
-            renderLineChart(document.getElementById('chart'), pageviews.byDay, 'day', 'views');
-            renderTable(document.getElementById('top-pages'), pageviews.topPages);
+            console.log('byDay:', pageviews.byDay);
+            console.log('topPages:', pageviews.topPages);
+
+            renderLineChart(
+                document.getElementById('chart'),
+                pageviews.byDay || [],
+                'day',
+                'views'
+            );
+
+            renderTable(
+                document.getElementById('top-pages'),
+                pageviews.topPages || []
+            );
         }
     }
 
-    async function renderErrors() {
-        const content = document.getElementById('content');
-        content.innerHTML = `
-            <div class="panel">
-                <h2>Error Trend</h2>
-                <canvas id="errors-chart" style="width:100%;margin:20px 0;"></canvas>
-            </div>
-            <div class="panel">
-                <h2>Top Errors</h2>
-                <div id="errors-table"></div>
-            </div>
-        `;
-
-        const errors = await api('/errors');
-        if (!errors) return;
-
-        renderLineChart(
-            document.getElementById('errors-chart'),
-            errors.trend || [],
-            'day',
-            'error_count'
-        );
-
-        const container = document.getElementById('errors-table');
-        container.innerHTML = '';
-
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Error Message</th>
-                    <th>Occurrences</th>
-                    <th>Last Seen</th>
-                </tr>
-            </thead>
-        `;
-
-        const tbody = document.createElement('tbody');
-        (errors.byMessage || []).forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${row.error_message || ''}</td>
-                <td>${Number(row.occurrences || 0).toLocaleString()}</td>
-                <td>${row.last_seen || ''}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        container.appendChild(table);
-    }
 
     // Router
     function route() {
