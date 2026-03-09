@@ -319,22 +319,179 @@ if ($method === "DELETE" && $route === 'events') {
 
 if($method === 'GET' && $route === 'pageviews'){
     //handle pageviews
-    json_response(["message" => "pageviews route not yet implemented"], 501);
+    requireAuth();
+
+    $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
+    $end = $_GET['end'] ?? date('Y-m-d H:i:s');
+
+    $trendStmt = $pdo->prepare("
+        SELECT DATE(server_timestamp) AS day, COUNT(*) AS pageviews
+        FROM pageviews
+        WHERE server_timestamp BETWEEN :start AND :end
+          AND type = 'pageview'
+        GROUP BY DATE(server_timestamp)
+        ORDER BY day
+    ");
+    $trendStmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $trend = $trendStmt->fetchAll();
+
+    $topPagesStmt = $pdo->prepare("
+        SELECT url, COUNT(*) AS views
+        FROM pageviews
+        WHERE server_timestamp BETWEEN :start AND :end
+         AND type = 'pageview'
+        GROUP BY url
+        ORDER BY views DESC
+        LIMIT 20
+    ");
+    $topPagesStmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $topPages = $topPagesStmt->fetchAll();
+
+    json_response([
+        'success' => true,
+        'data' => [
+            'trend' => $trend,
+            'topPages' => $topPages
+        ]
+    ]);
 }
 
 if($method === 'GET' && $route === 'performance'){
     //handle performance
-    json_response(["message" => "performance route not yet implemented"], 501);
+    requireAuth();
+
+    $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
+    $end = $_GET['end'] ?? date('Y-m-d H:i:s');
+
+    $stmt = $pdo->prepare("
+        SELECT
+            url,
+            COUNT (*) AS samples,
+            ROUND(AVG(load_time), 2) AS avg_load_time,
+            ROUND(AVG(ttfb),2) AS avg_ttfb,
+            ROUND(AVG(lcp), 2) AS avg_lcp,
+            ROUND(AVG(cls), 4) AS avg_cls
+        FROM performance
+        WHERE server_timestamp BETWEEN :start and :end
+        GROUP BY url
+        ORDER BY avg_load_time DESC
+        LIMIT 20
+    ");
+
+    $stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+
+
+    json_response([
+        'success' => true, 
+        'data' => $stmt->fetchAll()]);
 }
 
 if($method === 'GET' && $route === 'errors'){
     //handle errors
-    json_response(["message" => "errors route not yet implemented"], 501);
+    requireAuth();
+
+    $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
+    $end = $_GET['end'] ?? date('Y-m-d H:i:s');
+
+    $frequency_stmt = $pdo->prepare("
+        SELECT
+            error_message,
+            COUNT (*) AS count,
+            MAX(server_timestamp) AS last_seen
+        FROM errors
+        WHERE server_timestamp BETWEEN :start AND :end
+        GROUP BY error_message
+        ORDER BY count DESC, last_seen DESC
+        LIMIT 20
+    ");
+    frequency_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+
+    $frequency = $frequency_stmt->fetchAll();
+
+    $trend_stmt = $pdo->prepare("
+        SELECT
+            DATE(server_timestamp) AS day,
+            COUNT(*) AS error_count
+        FROM errors
+        WHERE server_timestamp BETWEEN :start AND :end
+        GROUP BY DATE(server_timestamp)
+        ORDER BY day
+    ");
+    $trend_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $trend = $trend_stmt->fetchAll();
+
+
+    json_response([
+        'success' => true,
+        'data' => [
+            'frequency' => $frequency,
+            'trend' => $trend
+        ]
+    ]);
 }
 
 if($method === 'GET' && $route === 'sessions'){
     //handle sessions
-    json_response(["message" => "sessions route not yet implemented"], 501);
+    requireAuth();
+
+    $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
+    $end = $_GET['end'] ?? date('Y-m-d H:i:s');
+
+    $count_stmt = $pdo->prepare("
+        SELECT
+            DATE(start_time) AS day,
+            COUNT(*) AS session_count
+        FROM sessions
+        WHERE start_time BETWEEN :start AND :end
+        GROUP BY DATE(start_time)
+        ORDER BY day
+    ");
+    $count_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $counts = $count_stmt->fetchAll();
+
+    $stats_stmt = $pdo->prepare("
+        SELECT
+            ROUND(AVG(duration_seconds), 2) AS avg_session_duration,
+            ROUND(AVG(page_count), 2) AS avg_pages_per_session,
+            ROUND(
+                100.0 * SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) / COUNT(*),
+                2
+            ) AS bounce_rate
+        FROM sessions
+        WHERE start_time BETWEEN :start AND :end
+    ");
+    $stats_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $stats = $stats_stmt->fetch();
+
+
+    json_response([
+        'success' => true,
+        'data' => [
+            'countsByDay' => $counts,
+            'stats' => $stats
+        ]
+    ]);
 }
 
 
