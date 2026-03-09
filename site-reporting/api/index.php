@@ -129,7 +129,7 @@ if($method === 'GET' && $route === 'dashboard'){
     requireAuth();
 
     $start = $_GET["start"] ?? date("Y-m-01 00:00:00");
-    $end = $_GET["end"] ?? date("Y-m-d H:i:s");
+    $end = $_GET["end"] ?? date("Y-m-d 23:59:59");
 
     $stmt = $pdo->prepare('
     SELECT

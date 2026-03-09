@@ -92,7 +92,45 @@ Considering the fact that I haven't taken a backend-centered course before, web 
 
 ### Link: [https://cse135tirani.site](https://cse135tirani.site)
 
-### Link to test: [https]
+### Link to test: [https://test.cse135tirani.site](https://test.cse135tirani.site)
 
 ### Additional Changes to collector.js beyond tutorial
 Beyond the collector.js tutorial on the main class website cse135.site, I made adjustments so that the collector script would obtain all the information needed as specified in the assignment details. I included functions to determine if css and images are enabled on the website, including other functions to determine the different user actions (key pressed, key lifted, mouse movement, etc.).
+
+
+## Homework 4
+
+### Student: Tia Irani (A17303637)
+
+### Grader Login (Server): grader
+### Grader Password (Server): 
+`n3v3rg0nnag1v3y0uUp`
+
+## Authentification Login
+
+Because the login is set up with an email, the login for graders to use is as followed:
+#### Email:`tirani@ucsd.edu`
+#### Password: `n3v3rg0nn@m@k3y0ucrY`
+
+There is no advantage to using my email beyond the fact that I don't have a standard email to set up a grader account for. 
+
+As such, please use this login information and if there is an issue, then let me know.
+
+#### Server IP Address: 157.245.225.178
+
+### Link to main site: [https://cse135tirani.site](https://cse135tirani.site)
+
+### Link to Login Page: [https://reporting.cse135tirani.site](https://reporting.cse135tirani.site)
+
+### Steps
+
+1. Authentification and Login
+   Authentification and login is set up for all of the pages listed on the dashboard site. For the purpose of forceful browsing, if the following links are visited when the user is **not** logged in, they will be referred back to `index.html` which serves as the login page.
+   Links:
+   - https://reporting.cse135tirani.site/speed-reporting.php
+   - https://reporting.cse135tirani.site/error-report.php
+   - https://reporting.cse135tirani.site/admin-report.php
+   - https://reporting.cse135tirani.site/dashboard.php
+2. Table
+   Currently, due to the fact that collection for the API endpoints for pageview, errors, performance, etc. started relatively recently, the main table shown on the overview page is obtained from the events 
+3. Chart
