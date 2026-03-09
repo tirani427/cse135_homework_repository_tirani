@@ -115,6 +115,7 @@ if($method === 'POST' && $route === 'login'){
 
 if($method === 'POST' && $route === 'logout'){
     //handle logout
+    $_SESSION = [];
     session_destroy();
     json_response(['success' => true], 200);
 }
@@ -788,7 +789,7 @@ if ($route === 'users' && $method === 'DELETE') {
         json_response(['success' => false, 'error' => 'Owner account cannot be deleted'], 403);
     }
 
-    if ($currentUserId !== null && (int)$existingUser['id'] === (int)$currentUserId) {
+    if ($currentUserId !== null && (int)$existing_user['id'] === (int)$currentUserId) {
         json_response(['success' => false, 'error' => 'You cannot delete your own account'], 403);
     }
 
