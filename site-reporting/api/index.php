@@ -135,7 +135,7 @@ if($method === 'GET' && $route === 'dashboard'){
     SELECT
         (SELECT COUNT(*) FROM pageviews
         WHERE server_timestamp BETWEEN ? AND ?
-        AND event_name = "pageview") AS total_pageviews,
+        AND type = "pageview") AS total_pageviews,
         (SELECT COUNT(DISTINCT session_id) FROM pageviews
         WHERE server_timestamp BETWEEN ? AND ?) AS total_sessions,
         (SELECT ROUND(AVG(load_time)) FROM performance
