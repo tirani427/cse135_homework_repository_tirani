@@ -192,11 +192,23 @@
    	</div>
    </div>
    <script>
-		collector.init({
-			endpoint: 'https://collector.cse135tirani.site/cgi-bin/collect.php',
-			debug: true});
-		collector.use(ClickTracker);
-		collector.use(ScrollTracker);
+		document.cookie = "analytics_consent=true; path=/; SameSite=Lax";
+
+        window.addEventListener('load', function () {
+                if (window.__collector && window.__collector.api) {
+                        window.__collector.api.init({
+                                endpoint: 'https://collector.cse135tirani.site/cgi-bin/collect.php',
+                                debug: false,
+                                sampleRate: 1.0,
+                                respectConsent: false,
+                                detectBots: false
+                        });
+						window.__collector.use(ClickTracker);
+						window.__collector.use(ScrollTracker);
+                } else {
+                        console.error('collector did not load');
+                }
+        });
 	</script>
 </body>
 
