@@ -22,14 +22,6 @@
 	<script async src="./ext-clicks.js"></script>
 	<script async src="./ext-scroll.js"></script>
 
-	<script>
-		collector.init({
-			endpoint: 'https://collector.cse135tirani.site/collect',
-			debug: true});
-		collector.use(ClickTracker);
-		collector.use(ScrollTracker);
-	</script>
-
     <title>CSE 135 HW Homepage</title>
     <style>
         body {
@@ -199,6 +191,13 @@
 		</div>
    	</div>
    </div>
+   <script>
+		collector.init({
+			endpoint: 'https://collector.cse135tirani.site/cgi-bin/collect.php',
+			debug: true});
+		collector.use(ClickTracker);
+		collector.use(ScrollTracker);
+	</script>
 </body>
 
 </html>
