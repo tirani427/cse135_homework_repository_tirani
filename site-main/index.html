@@ -203,8 +203,8 @@
                                 respectConsent: false,
                                 detectBots: false
                         });
-						window.__collector.use(ClickTracker);
-						window.__collector.use(ScrollTracker);
+						window.__collector.use('click-tracker');
+						window.__collector.use('scroll-tracker');
                 } else {
                         console.error('collector did not load');
                 }
