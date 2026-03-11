@@ -263,13 +263,13 @@ try{
         $stmtPerf->execute([
             ":session_id" => substr((string)$sid, 0, 36),
             ":url" => $page_url,
-            ":user_agent" => isset($data["userAgent"]) ? substr((string)$data["userAgent"], 0, 512) : null,
-            ":load_time" => isset($payload["load_time"]) ? (float)$payload["load_time"] : null,
-            ":ttfb" => isset($payload["ttfb"]) ? (float)$payload["ttfb"] : null,
-            ":fcp" => isset($payload["fcp"]) ? (float)$payload["fcp"] : null,
-            ":lcp" => isset($payload["lcp"]) ? (float)$payload["lcp"] : null,
-            ":cls" => isset($payload["cls"]) ? (float)$payload["cls"] : null,
-            ":inp" => isset($payload["inp"]) ? (float)$payload["inp"] : null,
+            ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
+            ":load_time" => isset($pageLoad["totalLoadMS"]) ? (float)$pageLoad["totalLoadMS"] : null,
+            ":ttfb" => isset($timing["ttfb"]) ? (float)$timing["ttfb"] : null,
+            ":fcp" => null,
+            ":lcp" => isset($vitals["lcp"]) ? (float)$vitals["lcp"] : null,
+            ":cls" => isset($vitals["cls"]) ? (float)$vitals["cls"] : null,
+            ":inp" => isset($vitals["inp"]) ? (float)$vitals["inp"] : null,
             ":server_timestamp" => $serverTimestamp
         ]);
     }
