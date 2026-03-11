@@ -191,6 +191,51 @@ try{
             ":session_id" => substr((string)$sid, 0, 36),
             ":payload" => json_encode($data, JSON_UNESCAPED_SLASHES)
         ]);
+
+        $performance = isset($data["performance"]) && is_array($data["performance"]) ? $data["performance"] : [];
+        $pageLoad = isset($performance["pageLoad"]) && is_array($performance["pageLoad"]) ? $performance["pageLoad"] : [];
+        $timing = isset($data["timing"]) && is_array($data["timing"]) ? $data["timing"] : [];
+        $vitals = isset($data["vitals"]) && is_array($data["vitals"]) ? $data["vitals"] : [];
+        $tech = isset($data["technographics"]) && is_array($data["technographics"]) ? $data["technographics"] : [];
+
+        $stmtperformance = $pdo->prepare("
+            INSERT INTO performance (
+                session_id,
+                url,
+                user_agent,
+                load_time,
+                ttfb,
+                fcp,
+                lcp,
+                cls,
+                inp,
+                server_timestamp
+            ) VALUES (
+                :session_id,
+                :url,
+                :user_agent,
+                :load_time,
+                :ttfb,
+                :fcp,
+                :lcp,
+                :cls,
+                :inp,
+                :server_timestamp
+            )
+        ");
+
+        $stmtperformance->execute([
+            ":session_id" => substr((string)$sid, 0, 36),
+            ":url" => $page_url,
+            ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
+            ":load_time" => isset($pageLoad["totalLoadMS"]) ? (float)$pageLoad["totalLoadMS"] : null,
+            ":ttfb" => isset($timing["ttfb"]) ? (float)$timing["ttfb"] : null,
+            ":fcp" => null,
+            ":lcp" => isset($vitals["lcp"]) ? (float)$vitals["lcp"] : null,
+            ":cls" => isset($vitals["cls"]) ? (float)$vitals["cls"] : null,
+            ":inp" => isset($vitals["inp"]) ? (float)$vitals["inp"] : null,
+            ":server_timestamp" => $serverTimestamp
+        ]);
     }
     if ($event_type === "error") {
         $payload = (isset($data["error"]) && is_array($data["error"])) ? $data["error"] : $data;
@@ -231,48 +276,48 @@ try{
             ":server_timestamp" => $serverTimestamp
         ]);
     }
-    if ($event_type === "performance") {
-        $payload = $data["payload"] ?? $data;
+    // if ($event_type === "performance") {
+    //     $payload = $data["payload"] ?? $data;
 
-        $stmtPerf = $pdo->prepare("
-            INSERT INTO performance (
-                session_id,
-                url,
-                user_agent,
-                load_time,
-                ttfb,
-                fcp,
-                lcp,
-                cls,
-                inp,
-                server_timestamp
-            ) VALUES (
-                :session_id,
-                :url,
-                :user_agent,
-                :load_time,
-                :ttfb,
-                :fcp,
-                :lcp,
-                :cls,
-                :inp,
-                :server_timestamp
-            )
-        ");
+    //     $stmtPerf = $pdo->prepare("
+    //         INSERT INTO performance (
+    //             session_id,
+    //             url,
+    //             user_agent,
+    //             load_time,
+    //             ttfb,
+    //             fcp,
+    //             lcp,
+    //             cls,
+    //             inp,
+    //             server_timestamp
+    //         ) VALUES (
+    //             :session_id,
+    //             :url,
+    //             :user_agent,
+    //             :load_time,
+    //             :ttfb,
+    //             :fcp,
+    //             :lcp,
+    //             :cls,
+    //             :inp,
+    //             :server_timestamp
+    //         )
+    //     ");
 
-        $stmtPerf->execute([
-            ":session_id" => substr((string)$sid, 0, 36),
-            ":url" => $page_url,
-            ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
-            ":load_time" => isset($pageLoad["totalLoadMS"]) ? (float)$pageLoad["totalLoadMS"] : null,
-            ":ttfb" => isset($timing["ttfb"]) ? (float)$timing["ttfb"] : null,
-            ":fcp" => null,
-            ":lcp" => isset($vitals["lcp"]) ? (float)$vitals["lcp"] : null,
-            ":cls" => isset($vitals["cls"]) ? (float)$vitals["cls"] : null,
-            ":inp" => isset($vitals["inp"]) ? (float)$vitals["inp"] : null,
-            ":server_timestamp" => $serverTimestamp
-        ]);
-    }
+    //     $stmtPerf->execute([
+    //         ":session_id" => substr((string)$sid, 0, 36),
+    //         ":url" => $page_url,
+    //         ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
+    //         ":load_time" => isset($pageLoad["totalLoadMS"]) ? (float)$pageLoad["totalLoadMS"] : null,
+    //         ":ttfb" => isset($timing["ttfb"]) ? (float)$timing["ttfb"] : null,
+    //         ":fcp" => null,
+    //         ":lcp" => isset($vitals["lcp"]) ? (float)$vitals["lcp"] : null,
+    //         ":cls" => isset($vitals["cls"]) ? (float)$vitals["cls"] : null,
+    //         ":inp" => isset($vitals["inp"]) ? (float)$vitals["inp"] : null,
+    //         ":server_timestamp" => $serverTimestamp
+    //     ]);
+    // }
     http_response_code(204);
     exit();
 } catch (Exception $e){
