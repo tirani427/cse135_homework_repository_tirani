@@ -202,7 +202,6 @@ try{
             INSERT INTO performance (
                 session_id,
                 url,
-                user_agent,
                 load_time,
                 ttfb,
                 fcp,
@@ -227,7 +226,6 @@ try{
         $stmtperformance->execute([
             ":session_id" => substr((string)$sid, 0, 36),
             ":url" => $page_url,
-            ":user_agent" => isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null,
             ":load_time" => isset($pageLoad["totalLoadMS"]) ? (float)$pageLoad["totalLoadMS"] : null,
             ":ttfb" => isset($timing["ttfb"]) ? (float)$timing["ttfb"] : null,
             ":fcp" => null,
