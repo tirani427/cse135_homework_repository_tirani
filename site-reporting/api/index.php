@@ -417,7 +417,7 @@ if($method === 'GET' && $route === 'performance'){
     json_response([
         'success' => true, 
         'data' =>[
-            "byPage":$stmt->fetchAll()
+            "byPage" => $stmt->fetchAll()
         ]
     ]);
 }
