@@ -248,9 +248,7 @@ if (!isset($_SESSION['user'])) {
         document.getElementById('startDate').value = formatDate(thirtyAgo);
 
         document.getElementById('loadBtn').addEventListener('click', loadData);
-
-        document.getElementById('date-end').value = today.toISOString().slice(0, 10);
-        document.getElementById('date-start').value = thirtyDaysAgo.toISOString().slice(0, 10);
+        
 
         // Initial load
         loadData();
