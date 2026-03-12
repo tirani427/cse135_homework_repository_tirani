@@ -401,7 +401,8 @@ if($method === 'GET' && $route === 'performance'){
             ROUND(AVG(lcp), 2) AS avg_lcp,
             ROUND(AVG(cls), 4) AS avg_cls
         FROM performance
-        WHERE server_timestamp BETWEEN :start and :end
+        WHERE server_timestamp >= :start
+        AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
         GROUP BY url
         ORDER BY avg_load_time DESC
         LIMIT 20
