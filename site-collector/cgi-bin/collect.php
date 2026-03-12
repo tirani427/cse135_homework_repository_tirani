@@ -68,6 +68,88 @@ try{
         ]
     );
 
+    $tech = isset($data["technographics"]) && is_array($data["technographics"]) ? $data["technographics"] : [];
+    $userAgent = isset($tech["userAgent"]) ? substr((string)$tech["userAgent"], 0, 512) : null;
+    $referrer = isset($data["referrer"]) ? substr((string)$data["referrer"], 0, 2048) : null;
+
+    if ($sid !== "missing" && $sid !== "") {
+        $findSession = $pdo->prepare("
+            SELECT id, start_time, page_count
+            FROM sessions
+            WHERE session_id = :session_id
+            ORDER BY start_time DESC
+            LIMIT 1
+        ");
+
+        $findSession->execute([
+            ":session_id" => substr((string)$sid, 0, 36)
+        ]);
+
+        $existingSession = $findSession->fetch();
+
+        if (!$existingSession) {
+            $insertSession = $pdo->prepare("
+                INSERT INTO sessions (
+                    session_id,
+                    first_page,
+                    last_page,
+                    page_count,
+                    start_time,
+                    last_activity,
+                    duration_seconds,
+                    referrer,
+                    user_agent
+                ) VALUES (
+                    :session_id,
+                    :first_page,
+                    :last_page,
+                    :page_count,
+                    :start_time,
+                    :last_activity,
+                    :duration_seconds,
+                    :referrer,
+                    :user_agent
+                )
+            ");
+
+            $insertSession->execute([
+                ":session_id" => substr((string)$sid, 0, 36),
+                ":first_page" => $page_url,
+                ":last_page" => $page_url,
+                ":page_count" => ($event_type === "pageview") ? 1 : 0,
+                ":start_time" => $serverTimestamp,
+                ":last_activity" => $serverTimestamp,
+                ":duration_seconds" => 0,
+                ":referrer" => $referrer,
+                ":user_agent" => $userAgent
+            ]);
+        } else {
+            $startTime = $existingSession["start_time"];
+            $oldPageCount = isset($existingSession["page_count"]) ? (int)$existingSession["page_count"] : 0;
+
+            $updateSession = $pdo->prepare("
+                UPDATE sessions
+                SET
+                    last_page = :last_page,
+                    last_activity = :last_activity,
+                    duration_seconds = TIMESTAMPDIFF(SECOND, start_time, :last_activity),
+                    page_count = :page_count,
+                    referrer = COALESCE(referrer, :referrer),
+                    user_agent = COALESCE(user_agent, :user_agent)
+                WHERE id = :id
+            ");
+
+            $updateSession->execute([
+                ":last_page" => $page_url,
+                ":last_activity" => $serverTimestamp,
+                ":page_count" => $oldPageCount + (($event_type === "pageview") ? 1 : 0),
+                ":referrer" => $referrer,
+                ":user_agent" => $userAgent,
+                ":id" => (int)$existingSession["id"]
+            ]);
+        }
+    }
+
     if ($event_type === "activity_batch" && isset($data["events"]) && is_array($data["events"])) {
         $stmt = $pdo->prepare("
             INSERT INTO events (
