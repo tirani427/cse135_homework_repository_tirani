@@ -61,6 +61,7 @@ Email: `viewer@test.com`
 
 Password: `m@yb31t$b3Tt3rth1$w@y`
 
+Due to the nature of the `viewer` role, this login takes the user directly to the reporting page, where a summary of all the reports are found. This means that the viewer role cannot access any of the other live backend pages. If attempted, then it returns a `403` error and will redirect the user to `403.html`. Upon clicking the `Return Home` link, the viewer is taken back to `reports.php`.
 
 
 ## Working Paths + Login For Each
