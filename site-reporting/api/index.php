@@ -473,6 +473,8 @@ if($method === 'GET' && $route === 'errors'){
     //handle errors
     requireAuth();
 
+    requirePermissions(['super admin', 'analyst'], ['errors']);
+
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
 
