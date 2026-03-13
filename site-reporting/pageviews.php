@@ -241,7 +241,7 @@ if (!isset($_SESSION['user'])) {
                                         weight: 'bold'
                                     },
                                     padding: 20,
-                                    boxWidth: 15
+                                    boxWidth: 30
                                 }
                             },
                             tooltip: {
