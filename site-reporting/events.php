@@ -264,7 +264,7 @@ if (!isset($_SESSION['user'])) {
                 const start = document.getElementById('startDate').value;
                 const end = document.getElementById('endDate').value;
 
-                const url = '/api/index.php/events-report?start=' +
+                const url = '/api/index.php/events?start=' +
                     encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
 
                 try {
