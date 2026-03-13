@@ -8,6 +8,12 @@ These pages serve as endpoints for when the API returns status codes other than 
 
    1. `401.html`
       - In the instance that an unregistered `user` tries to access any page, they get redirected to `401.html` then taken back to `index.html` to login. 
+      - Example:
+        - Forceful browsing with `https://reporting.cse135tirani.site/error-report.php` while not logged in.
+        - `error-report.php` checks `isset($_SESSIONS['user])`
+        - `isset($_SESSIONS['user'])` returns false
+        - `header('Location: /401.html)` is set
+        - `error-report.php` exits
 
    2. `403.html` 
       - In the instance that a user tries to access page X and lacks the necessary roles/permissions, the API returns `error 403`. 
@@ -20,3 +26,7 @@ These pages serve as endpoints for when the API returns status codes other than 
               - `requirePermissions($allowedRoles, $required)` checks `$permissions` against `$required` &rarr; returns error `403`.
           - `error-report.php` receives `resp.status 403` 
           - `error-report.php` redirects to `/403.html`
+   3. `404.html`
+      - In the instance that a page cannot be found, the page redirects to `404.html`
+   4. `500.html`
+      - In the instance that a server-side error is returned, the user is redirected to `500.html`, which will prompt them to return to the dashboard.
