@@ -130,6 +130,7 @@ if (!isset($_SESSION['user'])) {
         <a href="/speed-reporting.php">Performance</a>
         <a href="/error-report.php">Errors</a>
         <a href="/admin-report.php">Admin</a>
+        <a href="/pageviews.php">Pageviews</a>
     </nav>
 
     <main class="main">
