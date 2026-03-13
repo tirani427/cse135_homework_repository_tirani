@@ -82,6 +82,9 @@ if (!isset($_SESSION['user'])) {
                     <label for="endDate">To</label>
                     <input type="date" id="endDate">
 
+                    <label for="numberPages">Number of Pages:</label>
+                    <input type="number" id="numberPages" value="6" min="2" max="20">
+
                     <button id="loadBtn">Load</button>
                 </div>
 
@@ -98,7 +101,7 @@ if (!isset($_SESSION['user'])) {
             const thirtyAgo = new Date(Date.now() - 30 * 86400000);
 
             document.getElementById('startDate').value = formatDate(thirtyAgo);
-            document.getElementById('endDate').value = formatDate(today);
+            document.getElementById('endDate').value = formatDate(today);            
             document.getElementById('loadBtn').addEventListener('click', loadData);
 
             loadData();
@@ -124,6 +127,7 @@ if (!isset($_SESSION['user'])) {
 
                 const start = document.getElementById('startDate').value;
                 const end = document.getElementById('endDate').value;
+                const topCount = parseInt(document.getElementById('numberPages').value, 10) || 6;
 
                 const url = '/api/index.php/pageviews?start=' +
                     encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
@@ -138,7 +142,7 @@ if (!isset($_SESSION['user'])) {
                     }
 
                     const topPages = json.data.topPages || [];
-                    renderPieChart(topPages);
+                    renderPieChart(topPages, topCount);
                 } catch (err) {
                     showError('Network error: could not load pageview data.');
                 }
@@ -153,7 +157,7 @@ if (!isset($_SESSION['user'])) {
                 }
             }
 
-            function groupTopPages(topPages, maxSlices = 6) {
+            function groupTopPages(topPages, maxSlices) {
                 if (topPages.length <= maxSlices) return topPages;
 
                 const top = topPages.slice(0, maxSlices - 1);
@@ -169,7 +173,7 @@ if (!isset($_SESSION['user'])) {
                 return top;
             }
 
-            function renderPieChart(topPages) {
+            function renderPieChart(topPages, maxSlices) {
                 const ctx = document.getElementById('topPagesChart').getContext('2d');
 
                 if (chartInstance) {
@@ -197,7 +201,7 @@ if (!isset($_SESSION['user'])) {
                     return;
                 }
 
-                const grouped = groupTopPages(topPages, 6);
+                const grouped = groupTopPages(topPages, maxSlices);
                 const labels = grouped.map(row => simplifyUrl(row.url));
                 const values = grouped.map(row => Number(row.views));
 
