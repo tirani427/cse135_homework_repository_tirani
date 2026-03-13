@@ -97,7 +97,7 @@ if (!isset($_SESSION['user'])) {
 
                 <h2>Most Visited Pages</h2>
                 <div class="chart-container">
-                    <canvas id="topPagesChart"></canvas>
+                    <canvas id="topPagesChart" width="700px" height="700px"></canvas>
                 </div>
             </div>
         </div>
