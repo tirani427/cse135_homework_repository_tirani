@@ -481,7 +481,7 @@ if($method === 'GET' && $route === 'performance'){
     //handle performance
     requireAuth();
 
-    requirePermissions(['super admin', 'analyst', 'viewer'], ['reporting','performance']);
+    requirePermissions(['super admin', 'analyst'], ['reporting','performance']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
