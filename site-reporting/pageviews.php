@@ -173,6 +173,19 @@ if (!isset($_SESSION['user'])) {
                 return top;
             }
 
+            function generateColors(count) {
+                const colors = [];
+
+                for (let i = 0; i < count; i++) {
+
+                    const hue = Math.round((360 / count) * i);
+
+                    colors.push(`hsl(${hue}, 65%, 55%)`);
+                }
+
+                return colors;
+            }
+
             function renderPieChart(topPages, maxSlices) {
                 const ctx = document.getElementById('topPagesChart').getContext('2d');
 
@@ -205,12 +218,15 @@ if (!isset($_SESSION['user'])) {
                 const labels = grouped.map(row => simplifyUrl(row.url));
                 const values = grouped.map(row => Number(row.views));
 
+                const colors = generateColors(values.length);
+
                 chartInstance = new Chart(ctx, {
                     type: 'pie',
                     data: {
                         labels: labels,
                         datasets: [{
-                            data: values
+                            data: values,
+                            backgroundColor: colors
                         }]
                     },
                     options: {
