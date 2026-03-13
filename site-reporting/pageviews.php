@@ -64,8 +64,10 @@ if (!isset($_SESSION['user'])) {
                 padding: 12px 16px;
                 margin-bottom: 16px;
             }
-            #topPagesChart{
-                overflow: scroll;
+            .chart-container {
+                max-width: 700px;
+                margin: auto;
+                height: 450px;
             }
         </style>
     </head>
@@ -92,7 +94,9 @@ if (!isset($_SESSION['user'])) {
                 </div>
 
                 <h2>Most Visited Pages</h2>
-                <canvas id="topPagesChart" width="400" height="400"></canvas>
+                <div class="chart-container">
+                    <canvas id="topPagesChart" width="400" height="400"></canvas>
+                </div>
             </div>
         </div>
 
@@ -234,6 +238,7 @@ if (!isset($_SESSION['user'])) {
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 position: 'bottom',
