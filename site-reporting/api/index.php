@@ -239,7 +239,10 @@ if($method === "GET" && $route === 'events'){
     $stmt->execute();
     $rows = $stmt->fetchAll();
 
-    json_response($rows, 200);
+    json_response([
+        "success" => true,
+        "data" => $rows
+    ], 200);
 }
 
 // ---------- POST ----------
