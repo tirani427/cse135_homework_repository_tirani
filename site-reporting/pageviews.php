@@ -68,6 +68,9 @@ if (!isset($_SESSION['user'])) {
                 max-width: 700px;
                 margin: auto;
                 height: 450px;
+
+                overflow-y: auto;
+                max-height: 500px;
             }
         </style>
     </head>
