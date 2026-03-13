@@ -29,11 +29,11 @@ function read_json_body(){
 
 function get_permissions(){
     $raw = $_SESSION['user']['permissions'] ?? '';
-    if(!$raw){
+    if($raw === null || $raw === ''){
         return [];
     }
 
-    return array_map('trim', explode(',', $raw));
+    return array_map('trim', explode(',', (string)$raw));
 }
 
 function requireAuth(): void {
@@ -66,15 +66,15 @@ function requirePermissions(array $allowedRoles, array $required){
 
     requireRole($allowedRoles);
 
-    // $hasPermission = false;
-    // foreach($required as $perm){
-    //     if(in_array($perm, $permission, true)){
-    //         $hasPermission = true;
-    //         break;
-    //     }
-    // }
+    $hasPermission = false;
+    foreach($required as $perm){
+        if(in_array($perm, $permission, true)){
+            $hasPermission = true;
+            break;
+        }
+    }
 
-    if(empty(array_intersect($permission, $required))){
+    if(!$hasPermission){
         json_response([
             'success' => false,
             'error' => 'Insufficient permissions'
