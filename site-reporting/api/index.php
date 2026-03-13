@@ -61,10 +61,10 @@ function requirePermissions(array $allowedRoles, array $required){
     $role = $_SESSION['user']['role'] ?? null;
 
     if($role === 'super admin'){
-        return true;
+        return;
     }
 
-    //requireRole($allowedRoles);
+    requireRole($allowedRoles);
 
     $hasPermission = false;
     foreach($required as $perm){
