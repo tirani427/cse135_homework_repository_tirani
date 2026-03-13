@@ -10,7 +10,7 @@ function authenticate(PDO $pdo, string $email, string $password): ?array {
     }
 
     $stmt = $pdo->prepare(
-        'SELECT id, email, password_hash, display_name, role
+        'SELECT id, email, password_hash, display_name, role, permissions
         FROM users
         WHERE email = :email
         LIMIT 1'
@@ -31,6 +31,7 @@ function authenticate(PDO $pdo, string $email, string $password): ?array {
     'id' => (int)$user['id'],
     'email' => $user['email'],
     'displayName' => $user['display_name'],
-    'role' => $user['role']
+    'role' => $user['role'],
+    'permissions' => $user['permissions']
    ]);
 }
