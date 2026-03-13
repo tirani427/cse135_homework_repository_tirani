@@ -245,6 +245,54 @@ if($method === "GET" && $route === 'events'){
     ], 200);
 }
 
+if ($method === 'GET' && $route === 'events-report') {
+    requireAuth();
+    requirePermissions(['super admin', 'analyst'], ['events']);
+
+    $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
+    $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
+
+    $trend_stmt = $pdo->prepare("
+        SELECT
+            DATE(server_timestamp) AS day,
+            COUNT(*) AS event_count
+        FROM events
+        WHERE server_timestamp BETWEEN :start AND :end
+        GROUP BY DATE(server_timestamp)
+        ORDER BY day
+    ");
+    $trend_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $trend = $trend_stmt->fetchAll();
+
+    $top_stmt = $pdo->prepare("
+        SELECT
+            event_name,
+            COUNT(*) AS occurrences,
+            MAX(server_timestamp) AS last_seen
+        FROM events
+        WHERE server_timestamp BETWEEN :start AND :end
+        GROUP BY event_name
+        ORDER BY occurrences DESC, last_seen DESC
+        LIMIT 15
+    ");
+    $top_stmt->execute([
+        ':start' => $start,
+        ':end' => $end
+    ]);
+    $topEvents = $top_stmt->fetchAll();
+
+    json_response([
+        'success' => true,
+        'data' => [
+            'trend' => $trend,
+            'topEvents' => $topEvents
+        ]
+    ], 200);
+}
+
 // ---------- POST ----------
 if ($method === "POST" && $route === 'events') {
     if ($id !== null){
