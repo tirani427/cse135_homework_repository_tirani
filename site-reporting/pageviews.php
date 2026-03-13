@@ -153,6 +153,22 @@ if (!isset($_SESSION['user'])) {
                 }
             }
 
+            function groupTopPages(topPages, maxSlices = 6) {
+                if (topPages.length <= maxSlices) return topPages;
+
+                const top = topPages.slice(0, maxSlices - 1);
+                const rest = topPages.slice(maxSlices - 1);
+
+                const otherViews = rest.reduce((sum, row) => sum + Number(row.views || 0), 0);
+
+                top.push({
+                    url: 'Other',
+                    views: otherViews
+                });
+
+                return top;
+            }
+
             function renderPieChart(topPages) {
                 const ctx = document.getElementById('topPagesChart').getContext('2d');
 
@@ -181,8 +197,9 @@ if (!isset($_SESSION['user'])) {
                     return;
                 }
 
-                const labels = topPages.map(row => simplifyUrl(row.url));
-                const values = topPages.map(row => Number(row.views));
+                const grouped = groupTopPages(topPages, 6);
+                const labels = grouped.map(row => simplifyUrl(row.url));
+                const values = grouped.map(row => Number(row.views));
 
                 chartInstance = new Chart(ctx, {
                     type: 'pie',
