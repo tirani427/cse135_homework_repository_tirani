@@ -233,7 +233,16 @@ if (!isset($_SESSION['user'])) {
                         responsive: true,
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        size: 14,
+                                        family: 'sans-serif',
+                                        weight: 'bold'
+                                    },
+                                    padding: 20,
+                                    boxWidth: 15
+                                }
                             },
                             tooltip: {
                                 callbacks: {
