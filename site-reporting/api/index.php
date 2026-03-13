@@ -68,7 +68,7 @@ function requirePermissions(array $allowedRoles, array $required){
 
     $hasPermission = false;
     foreach($required as $perm){
-        if(in_array($perm, $permisions, true)){
+        if(in_array($perm, $permission, true)){
             $hasPermission = true;
             break;
         }
