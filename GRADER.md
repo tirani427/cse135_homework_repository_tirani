@@ -61,7 +61,7 @@ Email: `viewer@test.com`
 
 Password: `m@yb31t$b3Tt3rth1$w@y`
 
-[TO DO]
+
 
 ## Working Paths + Login For Each
 
