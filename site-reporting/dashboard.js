@@ -9,7 +9,7 @@
         try {
             const res = await fetch(API_BASE + '/dashboard', { credentials: 'include' });
             if (res.status === 401) {
-                window.location.href = '/index.html';
+                window.location.href = '/401.html';
                 return false;
             }
             return true;
