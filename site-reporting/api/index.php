@@ -27,6 +27,15 @@ function read_json_body(){
     return is_array($data) ? $data : null;
 }
 
+function get_permissions(){
+    $raw = $_SESSION['user']['permissions'] ?? '';
+    if(!$raw){
+        return [];
+    }
+
+    return array_map('trim', explode(',', $raw));
+}
+
 function requireAuth(): void {
     if(empty($_SESSION['user'])){
         json_response(['success' => false, 'error' => 'Authentification required'], 401);
@@ -38,6 +47,34 @@ function requireRole(array $allowedRoles): void {
 
     $role = $_SESSION['user']['role'] ?? null;
     if(!in_array($role, $allowedRoles, true)){
+        json_response([
+            'success' => false,
+            'error' => 'Insufficient permissions'
+        ], 403);
+    }
+}
+
+function requirePermissions(array $allowedRoles, array $required){
+    requireAuth();
+
+    $permission = get_permissions();
+    $role = $_SESSION['user']['role'] ?? null;
+
+    if($role === 'super admin'){
+        return true;
+    }
+
+    requireRole($allowedRoles);
+
+    $hasPermission = false;
+    foreach($required as $perm){
+        if(in_array($perm, $permisions, true)){
+            $hasPermission = true;
+            break;
+        }
+    }
+
+    if(!$hasPermission){
         json_response([
             'success' => false,
             'error' => 'Insufficient permissions'
@@ -126,6 +163,8 @@ if($method === 'POST' && $route === 'logout'){
 
 if($method === 'GET' && $route === 'dashboard'){
     requireAuth();
+
+    requirePermissions(['super admin', 'analyst', 'viewer'], ['reports']);
 
     $start = ($_GET["start"] ?? date("Y-m-01")) . " 00:00:00";
     $end = ($_GET["end"] ?? date("Y-m-d")) . " 23:59:59";
@@ -566,7 +605,7 @@ if ($method === 'GET' && $route === 'dashboard') {
 // ------------------------------------------------
 
 if($method === 'GET' && $route === 'users'){
-    requireRole(['owner', 'admin']);
+    requireRole(['super admin']);
 
     if($id !== null){
         $stmt = $pdo->prepare("
