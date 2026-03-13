@@ -66,15 +66,15 @@ function requirePermissions(array $allowedRoles, array $required){
 
     requireRole($allowedRoles);
 
-    $hasPermission = false;
-    foreach($required as $perm){
-        if(in_array($perm, $permission, true)){
-            $hasPermission = true;
-            break;
-        }
-    }
+    // $hasPermission = false;
+    // foreach($required as $perm){
+    //     if(in_array($perm, $permission, true)){
+    //         $hasPermission = true;
+    //         break;
+    //     }
+    // }
 
-    if(!$hasPermission){
+    if(empty(array_intersect($permission, $required))){
         json_response([
             'success' => false,
             'error' => 'Insufficient permissions'
