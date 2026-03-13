@@ -430,7 +430,7 @@ if($method === 'GET' && $route === 'performance'){
     //handle performance
     requireAuth();
 
-    requirePermissions(['super admin', 'analyst'], ['performance']);
+    requirePermissions(['super admin', 'analyst', 'viewer'], ['performance']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -473,7 +473,7 @@ if($method === 'GET' && $route === 'errors'){
     //handle errors
     requireAuth();
 
-    requirePermissions(['super admin', 'analyst'], ['errors']);
+    requirePermissions(['super admin', 'analyst', 'viewer'], ['errors']);
 
     $start = $_GET['start'] ?? date('Y-m-01 00:00:00');
     $end = $_GET['end'] ?? date('Y-m-d H:i:s');
@@ -578,33 +578,33 @@ if($method === 'GET' && $route === 'sessions'){
 // DASHBOARD
 // ------------------------------------------------
 
-if ($method === 'GET' && $route === 'dashboard') {
-    requireAuth();
+// if ($method === 'GET' && $route === 'dashboard') {
+//     requireAuth();
 
-    $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
-    $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
+//     $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
+//     $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
 
-    $stmt = $pdo->prepare("
-        SELECT
-            (SELECT COUNT(*) FROM pageviews
-             WHERE server_timestamp BETWEEN ? AND ?
-               AND type = 'pageview') AS total_pageviews,
-            (SELECT COUNT(DISTINCT session_id) FROM pageviews
-             WHERE server_timestamp BETWEEN ? AND ?) AS total_sessions,
-            (SELECT ROUND(AVG(load_time)) FROM performance
-             WHERE server_timestamp BETWEEN ? AND ?) AS avg_load_time_ms,
-            (SELECT COUNT(*) FROM errors
-             WHERE server_timestamp BETWEEN ? AND ?) AS total_errors
-    ");
+//     $stmt = $pdo->prepare("
+//         SELECT
+//             (SELECT COUNT(*) FROM pageviews
+//              WHERE server_timestamp BETWEEN ? AND ?
+//                AND type = 'pageview') AS total_pageviews,
+//             (SELECT COUNT(DISTINCT session_id) FROM pageviews
+//              WHERE server_timestamp BETWEEN ? AND ?) AS total_sessions,
+//             (SELECT ROUND(AVG(load_time)) FROM performance
+//              WHERE server_timestamp BETWEEN ? AND ?) AS avg_load_time_ms,
+//             (SELECT COUNT(*) FROM errors
+//              WHERE server_timestamp BETWEEN ? AND ?) AS total_errors
+//     ");
 
-    $stmt->execute([$start, $end, $start, $end, $start, $end, $start, $end]);
-    $row = $stmt->fetch();
+//     $stmt->execute([$start, $end, $start, $end, $start, $end, $start, $end]);
+//     $row = $stmt->fetch();
 
-    json_response([
-        'success' => true,
-        'data' => $row
-    ], 200);
-}
+//     json_response([
+//         'success' => true,
+//         'data' => $row
+//     ], 200);
+// }
 
 // ------------------------------------------------
 // USERS
