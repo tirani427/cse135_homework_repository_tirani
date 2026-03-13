@@ -187,6 +187,11 @@ if (!isset($_SESSION['user'])) {
             <div id="errorBox" class="error-msg"></div>
 
             <div class="panel">
+                <h2>Analyst Comment</h2>
+                <div id="analystComment" class="comment-box">Loading summary...</div>
+            </div>
+
+            <div class="panel">
                 <h2>Event Trend Over Time</h2>
                 <div class="chart-wrap">
                     <canvas id="trendChart"></canvas>
@@ -218,11 +223,6 @@ if (!isset($_SESSION['user'])) {
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div class="panel">
-                <h2>Analyst Comment</h2>
-                <div id="analystComment" class="comment-box">Loading summary...</div>
             </div>
         </div>
 
