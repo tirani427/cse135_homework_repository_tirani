@@ -178,13 +178,14 @@ if(!isset($_SESSION['user'])){
             <label for="endDate">To</label>
             <input type="date" id="endDate">
             <button id="loadBtn">Load</button>
+            <button id="logout-btn">Logout</button>
         </div>
-        <button id="logout-btn">Logout</button>
     </div>
     <script>
+
         document.addEventListener('click', e => {
             if (e.target.id === 'logout-btn') {
-                fetch(API_BASE + '/logout', { method: 'POST', credentials: 'include' })
+                fetch('/api/index.php/logout', { method: 'POST', credentials: 'include' })
                     .then(() => { window.location.href = '/index.html'; });
             }
         });
