@@ -54,7 +54,7 @@ function requireRole(array $allowedRoles): void {
     }
 }
 
-function requirePermissions(array $allowedRoles, array $required){
+function requirePermissions(array $allowedRoles, array $required): void {
     requireAuth();
 
     $permission = get_permissions();
