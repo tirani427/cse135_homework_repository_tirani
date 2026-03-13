@@ -2,6 +2,7 @@
 
 if(!isset($_SESSION['user'])){
     header("Location: /401.html");
+    exit();
 }
 ?>
 
