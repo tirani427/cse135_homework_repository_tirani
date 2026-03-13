@@ -5,6 +5,11 @@ if (!isset($_SESSION['user'])) {
     header("Location: /index.html");
     exit();
 }
+
+if($_SESSION['user']['role'] === 'viewer'){
+    header("Location: /403.html");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
