@@ -212,7 +212,7 @@ if (!isset($_SESSION['user'])) {
 <body>
     <div class="header">
         <h1>User Management</h1>
-        <a href="../01-login/login.html">Sign Out</a>
+        <a href="/index.html">Sign Out</a>
     </div>
 
     <div class="container">
