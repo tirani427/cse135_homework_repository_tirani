@@ -644,7 +644,7 @@ if($method === 'GET' && $route === 'users'){
 }
 
 if($method === 'POST' && $route === 'users'){
-    requireRole(['owner', 'admin']);
+    requireRole(['super admin']);
 
     $body = read_json_body();
     if($body === null){
@@ -723,7 +723,7 @@ if($method === 'POST' && $route === 'users'){
 }
 
 if ($route === 'users' && $method === 'PUT') {
-    requireRole(['owner', 'admin']);
+    requireRole(['super admin']);
 
     if ($id === null) {
         json_response([
@@ -812,7 +812,7 @@ if ($route === 'users' && $method === 'PUT') {
 }
 
 if ($route === 'users' && $method === 'DELETE') {
-    requireRole(['owner', 'admin']);
+    requireRole(['super admin']);
 
     if ($id === null) {
         json_response(['success' => false, 'error' => 'DELETE requires user id'], 400);
