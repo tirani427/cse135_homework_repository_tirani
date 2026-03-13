@@ -64,6 +64,9 @@ if (!isset($_SESSION['user'])) {
                 padding: 12px 16px;
                 margin-bottom: 16px;
             }
+            #topPagesChart{
+                overflow: scroll;
+            }
         </style>
     </head>
     <body>
