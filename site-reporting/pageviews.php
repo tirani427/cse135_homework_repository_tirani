@@ -67,8 +67,6 @@ if (!isset($_SESSION['user'])) {
             .chart-container {
                 max-width: 700px;
                 margin: auto;
-                height: 450px;
-
                 overflow-y: auto;
                 max-height: 500px;
             }
