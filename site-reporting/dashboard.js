@@ -23,7 +23,30 @@
         const dates = getDateRange();
         const url = `${API_BASE}${endpoint}?start=${dates.start}&end=${dates.end}`;
         const res = await fetch(url, { credentials: 'include' });
-        if (res.status === 401) { window.location.href = '/index.html'; return null; }
+        if (res.status === 401) { 
+            window.location.href = '/index.html'; 
+            return null; 
+        }
+
+        if(res.status == 400){
+            window.location.href = "/400.html";
+            return;
+        }
+        if(res.status === 401) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        if(res.status === 403){
+            window.location.href= "/403.html";
+            return;
+        }
+
+        if(res.status === 500){
+            window.location.href = "/500.html";
+            return;
+        }
+
         const json = await res.json();
         return json.success ? json.data : null;
     }

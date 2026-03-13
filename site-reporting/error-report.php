@@ -275,6 +275,26 @@ if($_SESSION['user']['role'] === 'viewer'){
 
             try {
                 var resp = await fetch(url, { credentials: 'include' });
+
+                if(resp.status == 400){
+                        window.location.href = "/400.html";
+                        return;
+                }
+                if(resp.status === 401) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                if(resp.status === 403){
+                    window.location.href= "/403.html";
+                    return;
+                }
+
+                if(resp.status === 500){
+                    window.location.href = "/500.html";
+                    return;
+                }
+
                 var json = await resp.json();
 
                 if (!json.success) {
