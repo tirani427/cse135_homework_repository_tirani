@@ -64,7 +64,7 @@ function requirePermissions(array $allowedRoles, array $required){
         return true;
     }
 
-    requireRole($allowedRoles);
+    //requireRole($allowedRoles);
 
     $hasPermission = false;
     foreach($required as $perm){
