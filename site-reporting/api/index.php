@@ -146,8 +146,19 @@ if($method === 'POST' && $route === 'login'){
         json_response(['success' => false, 'error' => 'Invalid credentials'], 401);
     }
     session_regenerate_id(true);
+
     $_SESSION['user'] = $user;
-    json_response(['success' => true, 'data' => $user]);
+
+    $redirect = "/dashboard.php";
+
+    if($_SESSION['user']['role'] === 'viewer'){
+        $redirect = "/reports.php";
+    }
+
+    json_response([
+        'success' => true, 
+        'data' => $user,
+        'redirect' => $redirect], 200);
 }
 
 if($method === 'POST' && $route === 'logout'){

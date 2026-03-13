@@ -24,7 +24,7 @@
         const url = `${API_BASE}${endpoint}?start=${dates.start}&end=${dates.end}`;
         const res = await fetch(url, { credentials: 'include' });
         if (res.status === 401) { 
-            window.location.href = '/index.html'; 
+            window.location.href = '/401.html'; 
             return null; 
         }
 

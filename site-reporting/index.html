@@ -130,7 +130,8 @@
                     message.textContent = "Login successful";
                     message.className = "success";
 
-                    window.location.href = "./dashboard.php";
+                    window.location.href = data.redirect || "/dashboard.php";
+                    
                 } catch (err) {
                     message.textContent = "network or server error";
                     message.className= "error";
