@@ -18,7 +18,7 @@ $raw = $_SESSION['user']['permissions'] ?? '';
 
 $permissions = array_map('trim', explode(',', (string)$raw));
 
-if(!in_array('pageviews', $permissions, true)){
+if(!in_array('pageviews', $permissions, true) || $_SESSION['user']['role'] !== 'super admin'){
     header("Location: /403.html");
     exit();
 }
