@@ -462,6 +462,41 @@ if($method === 'POST' && $route === 'exports'){
     ], 400);
 }
 
+// -----------------------------------------------
+// SAVED REPORTS
+// -----------------------------------------------
+
+if ($method === 'GET' && $route === 'saved-reports') {
+
+    requireAuth();
+
+    // viewers are allowed to see reports
+    requirePermissions(['super admin', 'analyst', 'viewer'], ['reports']);
+
+    $stmt = $pdo->prepare("
+        SELECT
+            sr.id,
+            sr.title,
+            sr.report_type,
+            sr.start_date,
+            sr.end_date,
+            sr.created_at,
+            sr.share_token,
+            u.display_name
+        FROM saved_reports sr
+        LEFT JOIN users u
+            ON sr.created_by = u.id
+        ORDER BY sr.created_at DESC
+    ");
+
+    $stmt->execute();
+
+    json_response([
+        "success" => true,
+        "data" => $stmt->fetchAll()
+    ], 200);
+}
+
 // ------------------------------------------------
 // EVENTS 
 // ------------------------------------------------
