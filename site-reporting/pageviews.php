@@ -11,6 +11,18 @@ if($_SESSION['user']['role'] === 'viewer'){
     exit();
 }
 
+$raw = $_SESSION['user']['permissions'] ?? '';
+    if($raw === null || $raw === ''){
+        return [];
+    }
+
+$permissions = array_map('trim', explode(',', (string)$raw));
+
+if(!in_array('pageviews', $permissions, true)){
+    header("Location: /403.html");
+    exit();
+}
+
 ?>
 
 <!DOCTYPE html>
