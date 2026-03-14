@@ -152,7 +152,7 @@ if($method === 'POST' && $route === 'login'){
     $redirect = "/dashboard.php";
 
     if($_SESSION['user']['role'] === 'viewer'){
-        $redirect = "/reports.php";
+        $redirect = "/saved_reports.php";
     }
 
     json_response([
