@@ -207,8 +207,8 @@ if($_SESSION['user']['role'] == 'viewer'){
         }
         .button-row button{
             padding: 6px 16px;
-            background: white;
-            color: #2E86C1;
+            background: #2E86C1;
+            color: white;
             border: none;
             border-radius: 4px;
             font-weight: 600;
