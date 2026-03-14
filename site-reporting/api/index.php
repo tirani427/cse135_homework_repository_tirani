@@ -254,7 +254,7 @@ if($method === 'POST' && $route === 'exports'){
         'sections' => []
     ];
 
-    $startTs = $start . '00:00:00';
+    $startTs = $start . ' 00:00:00';
     $endDate = $end;
 
     if(in_array('performance', $sections, true)){
@@ -266,8 +266,8 @@ if($method === 'POST' && $route === 'exports'){
                 COUNT(*) AS samples,
                 ROUND(AVG(load_time), 2) AS avg_load_time,
                 ROUND(AVG(ttfb), 2) AS avg_ttfb,
-                ROUND(AVG(lcp, 2) AS avg_lcp,
-                ROUND(AVG(cls, 4) AS avg_cls
+                ROUND(AVG(lcp), 2) AS avg_lcp,
+                ROUND(AVG(cls), 4) AS avg_cls
             FROM performance
             WHERE server_timestamp >= :start
             AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
@@ -316,7 +316,7 @@ if($method === 'POST' && $route === 'exports'){
         $stmt = $pdo->prepare("
             SELECT
                 url,
-                COUNT(*) AS views,
+                COUNT(*) AS views
             FROM pageviews
             WHERE server_timestamp >= :start
             AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
@@ -340,7 +340,7 @@ if($method === 'POST' && $route === 'exports'){
 
         $stmt = $pdo->prepare("
             SELECT
-                ROUND(AVG(duration_secconds), 2) AS avg_session_duration,
+                ROUND(AVG(duration_seconds), 2) AS avg_session_duration,
                 ROUND(AVG(page_count), 2) AS avg_pages_per_session,
                 ROUND(
                     100.0 * SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) / COUNT(*),
@@ -357,7 +357,7 @@ if($method === 'POST' && $route === 'exports'){
 
         $snapshot['sections']['sessions'] = [
             'comment' => $comments['sessions'] ?? '',
-            'stats' => $stmt->fetchAll()
+            'stats' => $stmt->fetch()
         ];
     }
 
@@ -370,7 +370,7 @@ if($method === 'POST' && $route === 'exports'){
                 MAX(server_timestamp) AS last_seen
             FROM events
             WHERE server_timestamp >= :start
-            AND sever_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
+            AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
             GROUP BY event_name
             ORDER BY occurrences DESC
             LIMIT 10
@@ -414,8 +414,8 @@ if($method === 'POST' && $route === 'exports'){
             'custom',
             :start_date,
             :end_date,
-            CAST(:sections AS JSON),
-            CAST(:snapshot AS JSON),
+            :sections,
+            :snapshot,
             1,
             :share_token
         )
