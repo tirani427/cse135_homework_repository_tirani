@@ -32,10 +32,6 @@
             window.location.href = "/400.html";
             return;
         }
-        if(res.status === 401) {
-            window.location.href = '/index.html';
-            return;
-        }
 
         if(res.status === 403){
             window.location.href= "/403.html";

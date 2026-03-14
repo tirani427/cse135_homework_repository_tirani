@@ -739,7 +739,7 @@ if ($method === "DELETE" && $route === 'events') {
 if ($method === 'GET' && $route === 'pageviews') {
     requireAuth();
 
-    requirePermissions(['super admin', 'analyst'], ['pageviews']);
+    requireRole(['super admin', 'analyst']);
 
     $start = ($_GET['start'] ?? date('Y-m-01')) . ' 00:00:00';
     $end = ($_GET['end'] ?? date('Y-m-d')) . ' 23:59:59';
