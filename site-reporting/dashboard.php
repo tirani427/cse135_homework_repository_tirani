@@ -144,17 +144,6 @@ if($_SESSION['user']['role'] === 'viewer'){
     </style>
 </head>
 <body>
-    <noscript>
-        <style>
-            .js-app { display: none; }
-        </style>
-        <div class="noscript-warning">
-            <h2>JavaScript is turned off</h2>
-            <p>This page requires JavaScript to load report data and charts.</p>
-            <p>Please enable JavaScript and refresh the page.</p>
-            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
-        </div>
-    </noscript>
     <div class="js-app">
         
         <nav class="sidebar">
@@ -200,5 +189,17 @@ if($_SESSION['user']['role'] === 'viewer'){
         document.getElementById('date-start').value = thirtyDaysAgo.toISOString().slice(0, 10);
     </script>
     <script src="./dashboard.js"></script>
+
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
+        </div>
+    </noscript>
 </body>
 </html>
