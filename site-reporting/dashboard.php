@@ -155,8 +155,8 @@ if($_SESSION['user']['role'] === 'viewer'){
         <a href="/reports.php">Reports</a>
         <a href="/saved_reports.php">Saved Reports</a>
     </nav>
-    <div class="js-app">
-        <main class="main">
+    <main class="main">
+        <div class="js-app">
             <div class="topbar">
                 <div class="filters">
                     <label>
@@ -173,8 +173,9 @@ if($_SESSION['user']['role'] === 'viewer'){
             </div>
 
             <div id="content"></div>
-        </main>
-    </div>
+        </div>
+    </main>
+    
 
     <script>
         window.addEventListener('DOMContentLoaded', () => {
