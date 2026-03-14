@@ -7,7 +7,7 @@ if (!isset($_SESSION['user'])) {
 }
 
 if($_SESSION['user']['role'] === 'viewer'){
-    header("Location: /reports.php");
+    header("Location: /saved_reports.php");
     exit();
 }
 
@@ -139,6 +139,7 @@ if($_SESSION['user']['role'] === 'viewer'){
         <a href="/pageviews.php">Pageviews</a>
         <a href="/events.php">Events</a>
         <a href="/reports.php">Reports</a>
+         <a href="/saved_reports.php">Saved Reports</a>
     </nav>
 
     <main class="main">
