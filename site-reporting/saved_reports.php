@@ -6,6 +6,26 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 
+require_once __DIR__ . '/api/db.php';
+
+$stmt = $pdo->prepare("
+    SELECT
+        sr.id,
+        sr.title,
+        sr.report_type,
+        sr.start_date,
+        sr.end_date,
+        sr.created_at,
+        sr.share_token,
+        u.display_name
+    FROM saved_reports sr
+    LEFT JOIN users u
+        ON sr.created_by = u.id
+    ORDER BY sr.created_at DESC
+");
+
+$stmt->execute();
+$reports = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -277,6 +297,21 @@ if (!isset($_SESSION['user'])) {
             border: none;
         }
 
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
         @media (max-width: 700px) {
             .header {
                 flex-direction: column;
@@ -300,24 +335,17 @@ if (!isset($_SESSION['user'])) {
                 height: 92vh;
             }
         }
-
-        .noscript-warning {
-            max-width: 900px;
-            margin: 24px auto;
-            padding: 20px 24px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            border-radius: 8px;
-            color: #664d03;
-        }
-
-        .noscript-warning h2 {
-            font-size: 1.1em;
-            margin-bottom: 8px;
-        }
     </style>
 </head>
 <body>
+
+    <noscript>
+        <div class="noscript-warning">
+            <h2>JavaScript is disabled</h2>
+            <p>Saved reports are still available below, but search, filtering, and quick preview are disabled.</p>
+        </div>
+    </noscript>
+
     <div class="js-app">
         <div class="header">
             <h1>Saved Reports</h1>
@@ -355,9 +383,56 @@ if (!isset($_SESSION['user'])) {
                             </tr>
                         </thead>
                         <tbody id="reportsBody">
-                            <tr>
-                                <td colspan="6" class="empty-state">Loading saved reports...</td>
-                            </tr>
+                            <?php if (empty($reports)): ?>
+                                <tr>
+                                    <td colspan="6" class="empty-state">No saved reports found.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($reports as $row): ?>
+                                    <tr
+                                        data-title="<?= htmlspecialchars(strtolower($row['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-creator="<?= htmlspecialchars(strtolower($row['display_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-type="<?= htmlspecialchars($row['report_type'] ?? 'custom', ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+                                        <td class="title-cell">
+                                            <div class="title-main"><?= htmlspecialchars($row['title'] ?? 'Untitled Report') ?></div>
+                                            <div class="title-sub">Token: <?= htmlspecialchars($row['share_token'] ?? '—') ?></div>
+                                        </td>
+
+                                        <td><?= htmlspecialchars($row['display_name'] ?? 'Unknown') ?></td>
+
+                                        <td>
+                                            <span class="badge"><?= htmlspecialchars($row['report_type'] ?? 'custom') ?></span>
+                                        </td>
+
+                                        <td>
+                                            <?= htmlspecialchars($row['start_date'] ?? '—') ?>
+                                            to
+                                            <?= htmlspecialchars($row['end_date'] ?? '—') ?>
+                                        </td>
+
+                                        <td><?= htmlspecialchars($row['created_at'] ?? '—') ?></td>
+
+                                        <td class="actions">
+                                            <a
+                                                class="primary"
+                                                href="/report-view.php?token=<?= urlencode($row['share_token'] ?? '') ?>"
+                                                target="_blank"
+                                            >
+                                                Open
+                                            </a>
+
+                                            <button
+                                                class="secondary quick-view-btn"
+                                                data-token="<?= htmlspecialchars($row['share_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                                data-title="<?= htmlspecialchars($row['title'] ?? 'Saved Report', ENT_QUOTES, 'UTF-8') ?>"
+                                            >
+                                                Quick View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -379,13 +454,18 @@ if (!isset($_SESSION['user'])) {
 
     <script>
     (function () {
-        let allReports = [];
+        const searchInput = document.getElementById('searchInput');
+        const typeFilter = document.getElementById('typeFilter');
+        const reportsBody = document.getElementById('reportsBody');
 
-        document.getElementById('searchInput').addEventListener('input', renderFilteredReports);
-        document.getElementById('typeFilter').addEventListener('change', renderFilteredReports);
+        searchInput?.addEventListener('input', filterRows);
+        typeFilter?.addEventListener('change', filterRows);
 
-        document.getElementById('closeModal').addEventListener('click', closeReportModal);
-        document.getElementById('reportModal').addEventListener('click', function (e) {
+        bindQuickViewButtons();
+
+        document.getElementById('closeModal')?.addEventListener('click', closeReportModal);
+
+        document.getElementById('reportModal')?.addEventListener('click', function (e) {
             if (e.target.id === 'reportModal') {
                 closeReportModal();
             }
@@ -402,15 +482,6 @@ if (!isset($_SESSION['user'])) {
             }
         });
 
-        loadReports();
-
-        function showError(msg) {
-            const box = document.getElementById('errorBox');
-            box.textContent = msg;
-            box.style.display = 'block';
-            document.getElementById('successBox').style.display = 'none';
-        }
-
         function showSuccess(msg) {
             const box = document.getElementById('successBox');
             box.textContent = msg;
@@ -418,117 +489,56 @@ if (!isset($_SESSION['user'])) {
             document.getElementById('errorBox').style.display = 'none';
         }
 
-        function escapeHtml(str) {
-            return String(str ?? '')
-                .replaceAll('&', '&amp;')
-                .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#39;');
+        function filterRows() {
+            const query = (searchInput?.value || '').trim().toLowerCase();
+            const selectedType = typeFilter?.value || '';
+
+            const rows = reportsBody.querySelectorAll('tr[data-title]');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const title = row.dataset.title || '';
+                const creator = row.dataset.creator || '';
+                const type = row.dataset.type || '';
+
+                const matchesQuery =
+                    !query || title.includes(query) || creator.includes(query);
+
+                const matchesType =
+                    !selectedType || type === selectedType;
+
+                const show = matchesQuery && matchesType;
+                row.style.display = show ? '' : 'none';
+
+                if (show) visibleCount++;
+            });
+
+            updateEmptyState(visibleCount);
         }
 
-        async function loadReports() {
-            try {
-                const resp = await fetch('/api/index.php/saved-reports', {
-                    credentials: 'include'
-                });
+        function updateEmptyState(visibleCount) {
+            let emptyRow = document.getElementById('js-empty-row');
 
-                if (resp.status === 401) {
-                    window.location.href = '/index.html';
-                    return;
+            if (visibleCount === 0) {
+                if (!emptyRow) {
+                    emptyRow = document.createElement('tr');
+                    emptyRow.id = 'js-empty-row';
+
+                    const td = document.createElement('td');
+                    td.colSpan = 6;
+                    td.className = 'empty-state';
+                    td.textContent = 'No saved reports match the current filters.';
+
+                    emptyRow.appendChild(td);
+                    reportsBody.appendChild(emptyRow);
                 }
-
-                if (resp.status === 403) {
-                    window.location.href = '/403.html';
-                    return;
-                }
-
-                const json = await resp.json();
-
-                if (!json.success) {
-                    showError(json.error || 'Failed to load saved reports.');
-                    return;
-                }
-
-                allReports = Array.isArray(json.data) ? json.data : [];
-                renderFilteredReports();
-            } catch (err) {
-                showError('Network error: could not reach the saved reports API.');
+            } else if (emptyRow) {
+                emptyRow.remove();
             }
         }
 
-        function renderFilteredReports() {
-            const query = document.getElementById('searchInput').value.trim().toLowerCase();
-            const type = document.getElementById('typeFilter').value;
-
-            const filtered = allReports.filter(row => {
-                const title = (row.title || '').toLowerCase();
-                const creator = (row.display_name || '').toLowerCase();
-                const rowType = row.report_type || '';
-
-                const matchesQuery = !query || title.includes(query) || creator.includes(query);
-                const matchesType = !type || rowType === type;
-
-                return matchesQuery && matchesType;
-            });
-
-            renderReports(filtered);
-        }
-
-        function renderReports(reports) {
-            const tbody = document.getElementById('reportsBody');
-            tbody.innerHTML = '';
-
-            if (!reports.length) {
-                const tr = document.createElement('tr');
-                const td = document.createElement('td');
-                td.colSpan = 6;
-                td.className = 'empty-state';
-                td.textContent = 'No saved reports found.';
-                tr.appendChild(td);
-                tbody.appendChild(tr);
-                return;
-            }
-
-            reports.forEach(row => {
-                const tr = document.createElement('tr');
-
-                const titleTd = document.createElement('td');
-                titleTd.className = 'title-cell';
-                titleTd.innerHTML = `
-                    <div class="title-main">${escapeHtml(row.title || 'Untitled Report')}</div>
-                    <div class="title-sub">Token: ${escapeHtml(row.share_token || '—')}</div>
-                `;
-                tr.appendChild(titleTd);
-
-                const userTd = document.createElement('td');
-                userTd.textContent = row.display_name || 'Unknown';
-                tr.appendChild(userTd);
-
-                const typeTd = document.createElement('td');
-                typeTd.innerHTML = `<span class="badge">${escapeHtml(row.report_type || 'custom')}</span>`;
-                tr.appendChild(typeTd);
-
-                const rangeTd = document.createElement('td');
-                rangeTd.textContent = (row.start_date || '—') + ' to ' + (row.end_date || '—');
-                tr.appendChild(rangeTd);
-
-                const createdTd = document.createElement('td');
-                createdTd.textContent = row.created_at || '—';
-                tr.appendChild(createdTd);
-
-                const actionsTd = document.createElement('td');
-                actionsTd.className = 'actions';
-                actionsTd.innerHTML = `
-                    <a class="primary" href="/report-view.php?token=${encodeURIComponent(row.share_token)}" target="_blank">Open</a>
-                    <button class="secondary" data-token="${escapeHtml(row.share_token)}" data-title="${escapeHtml(row.title || 'Saved Report')}">Quick View</button>
-                `;
-                tr.appendChild(actionsTd);
-
-                tbody.appendChild(tr);
-            });
-
-            tbody.querySelectorAll('button[data-token]').forEach(btn => {
+        function bindQuickViewButtons() {
+            document.querySelectorAll('.quick-view-btn').forEach(btn => {
                 btn.addEventListener('click', function () {
                     openReportModal(this.dataset.token, this.dataset.title);
                 });
@@ -537,7 +547,8 @@ if (!isset($_SESSION['user'])) {
 
         function openReportModal(token, title) {
             document.getElementById('modalTitle').textContent = title || 'Saved Report Preview';
-            document.getElementById('reportFrame').src = '/report-view.php?token=' + encodeURIComponent(token);
+            document.getElementById('reportFrame').src =
+                '/report-view.php?token=' + encodeURIComponent(token);
             document.getElementById('reportModal').style.display = 'block';
             showSuccess('Opened saved report preview.');
         }
