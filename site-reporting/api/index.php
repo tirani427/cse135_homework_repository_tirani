@@ -277,7 +277,7 @@ if($method === 'POST' && $route === 'exports'){
         ");
         $stmt->execute([
             ':start' => $startTs,
-            ":end" => $endDate
+            ':end' => $endDate
         ]);
 
         $snapshot['sections']['performance'] = [
@@ -301,8 +301,8 @@ if($method === 'POST' && $route === 'exports'){
             LIMIT 10
         ");
         $stmt->execute([
-            ":start" => $startTs,
-            ":end" => $endDate
+            ':start' => $startTs,
+            ':end' => $endDate
         ]);
 
         $snapshot['sections']['errors'] = [
@@ -326,8 +326,8 @@ if($method === 'POST' && $route === 'exports'){
             LIMIT 10
         ");
         $stmt->execute([
-            ":start" => $startTs,
-            ":end" => $endDate
+            ':start' => $startTs,
+            ':end' => $endDate
         ]);
 
         $snapshot['sections']['pageviews'] = [
@@ -351,8 +351,8 @@ if($method === 'POST' && $route === 'exports'){
             AND start_time < DATE_ADD(:end, INTERVAL 1 DAY)
         ");
         $stmt->execute([
-            ":start" => $startTs,
-            ":end" => $endDate
+            ':start' => $startTs,
+            ':end' => $endDate
         ]);
 
         $snapshot['sections']['sessions'] = [
@@ -376,8 +376,8 @@ if($method === 'POST' && $route === 'exports'){
             LIMIT 10
         ");
         $stmt->execute([
-            ":start" => $startTs,
-            ":end" => $endDate
+            ':start' => $startTs,
+            ':end' => $endDate
         ]);
 
         $snapshot['sections']['events'] = [
