@@ -127,39 +127,67 @@ if($_SESSION['user']['role'] === 'viewer'){
             color: white;
             cursor: pointer;
         }
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <nav class="sidebar">
-        <h2>Analytics</h2>
-        <a href="/dashboard.php" class="active">Overview</a>
-        <a href="/speed-reporting.php">Performance</a>
-        <a href="/error-report.php">Errors</a>
-        <a href="/admin-report.php">Admin</a>
-        <a href="/pageviews.php">Pageviews</a>
-        <a href="/events.php">Events</a>
-        <a href="/reports.php">Reports</a>
-         <a href="/saved_reports.php">Saved Reports</a>
-    </nav>
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
+        </div>
+    </noscript>
+    <div class="js-app">
+        
+        <nav class="sidebar">
+            <h2>Analytics</h2>
+            <a href="/dashboard.php" class="active">Overview</a>
+            <a href="/speed-reporting.php">Performance</a>
+            <a href="/error-report.php">Errors</a>
+            <a href="/admin-report.php">Admin</a>
+            <a href="/pageviews.php">Pageviews</a>
+            <a href="/events.php">Events</a>
+            <a href="/reports.php">Reports</a>
+            <a href="/saved_reports.php">Saved Reports</a>
+        </nav>
 
-    <main class="main">
-        <div class="topbar">
-            <div class="filters">
-                <label>
-                    Start
-                    <input type="date" id="date-start">
-                </label>
-                <label>
-                    End
-                    <input type="date" id="date-end">
-                </label>
+        <main class="main">
+            <div class="topbar">
+                <div class="filters">
+                    <label>
+                        Start
+                        <input type="date" id="date-start">
+                    </label>
+                    <label>
+                        End
+                        <input type="date" id="date-end">
+                    </label>
+                </div>
+
+                <button id="logout-btn">Logout</button>
             </div>
 
-            <button id="logout-btn">Logout</button>
-        </div>
-
-        <div id="content"></div>
-    </main>
+            <div id="content"></div>
+        </main>
+    </div>
 
     <script>
         window.addEventListener('DOMContentLoaded', () => {

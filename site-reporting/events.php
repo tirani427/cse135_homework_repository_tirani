@@ -173,61 +173,103 @@ if($_SESSION['user']['role'] === 'viewer'){
                 table { font-size: 0.85em; }
                 th, td { padding: 8px 6px; }
             }
+            .noscript-warning {
+                max-width: 900px;
+                margin: 24px auto;
+                padding: 20px 24px;
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                border-radius: 8px;
+                color: #664d03;
+            }
+
+            .noscript-warning h2 {
+                font-size: 1.1em;
+                margin-bottom: 8px;
+            }
+            .comment-box {
+                min-height: 100px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 14px;
+                background: #fafafa;
+                white-space: pre-wrap;
+            }
+            .chart-wrap {
+                position: relative;
+                width: 100%;
+                height: 320px;
+            }
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>Events Report</h1>
-            <div class="controls">
-                <label for="startDate">From</label>
-                <input type="date" id="startDate">
 
-                <label for="endDate">To</label>
-                <input type="date" id="endDate">
-
-                <button id="loadBtn">Load</button>
+        <noscript>
+            <style>
+                .js-app { display: none; }
+            </style>
+            <div class="noscript-warning">
+                <h2>JavaScript is turned off</h2>
+                <p>This page requires JavaScript to load report data and charts.</p>
+                <p>Please enable JavaScript and refresh the page.</p>
+                <p>Saved static report pages can still be viewed directly without JavaScript.</p>
             </div>
-        </div>
+        </noscript>
 
-        <div class="container">
-            <div id="errorBox" class="error-msg"></div>
+        <div class="js-app">
+            <div class="header">
+                <h1>Events Report</h1>
+                <div class="controls">
+                    <label for="startDate">From</label>
+                    <input type="date" id="startDate">
 
-            <div class="panel">
-                <h2>Analyst Comment</h2>
-                <div id="analystComment" class="comment-box">Loading summary...</div>
-            </div>
+                    <label for="endDate">To</label>
+                    <input type="date" id="endDate">
 
-            <div class="panel">
-                <h2>Event Trend Over Time</h2>
-                <div class="chart-wrap">
-                    <canvas id="trendChart"></canvas>
+                    <button id="loadBtn">Load</button>
                 </div>
             </div>
 
-            <div class="panel">
-                <h2>Top Event Types</h2>
-                <div class="chart-wrap">
-                    <canvas id="topEventsChart"></canvas>
-                </div>
-            </div>
+            <div class="container">
+                <div id="errorBox" class="error-msg"></div>
 
-            <div class="panel">
-                <h2>Event Details</h2>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Occurrences</th>
-                                <th>Last Seen</th>
-                            </tr>
-                        </thead>
-                        <tbody id="eventsBody">
-                            <tr>
-                                <td colspan="3" class="empty-state">Loading event data...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="panel">
+                    <h2>Analyst Comment</h2>
+                    <div id="analystComment" class="comment-box">Loading summary...</div>
+                </div>
+
+                <div class="panel">
+                    <h2>Event Trend Over Time</h2>
+                    <div class="chart-wrap">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Top Event Types</h2>
+                    <div class="chart-wrap">
+                        <canvas id="topEventsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Event Details</h2>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Occurrences</th>
+                                    <th>Last Seen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsBody">
+                                <tr>
+                                    <td colspan="3" class="empty-state">Loading event data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

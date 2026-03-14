@@ -182,116 +182,144 @@ if($_SESSION['user']['role'] == 'viewer'){
             border-radius: 4px;
             display: none;
         }
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Reports Builder</h1>
-        <div class="date-controls">
-            <!-- <label for="startDate">From</label>
-            <input type="date" id="startDate">
-            <label for="endDate">To</label>
-            <input type="date" id="endDate">
-            <button id="loadBtn">Load</button> -->
-            <button id="logout-btn">Logout</button>
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
         </div>
-        <!-- <button id="logout-btn">Logout</button> -->
-    </div>
-    <div class="container">
-        <div id="errorBox" class="error-msg"></div>
-        <div id="successBox" class="success-msg"></div>
+    </noscript>
 
-        <div class="panel">
-            <h2>Built Report</h2>
-
-            <div class="controls-row">
-                <div class="field">
-                    <label for="reportTitle">Report Title</label>
-                    <input type="text" id="reportTitle" placeholder="March Site Health Report">
-                </div>
-
-                <div class="field">
-                    <label for="startDate">From</label>
-                    <input type="date" id="startDate">
-                </div>
-
-                <div class="field">
-                    <label for="endDate">To</label>
-                    <input type="date" id="endDate">
-                </div>
+    <div class="js-app">
+        <div class="header">
+            <h1>Reports Builder</h1>
+            <div class="date-controls">
+                <!-- <label for="startDate">From</label>
+                <input type="date" id="startDate">
+                <label for="endDate">To</label>
+                <input type="date" id="endDate">
+                <button id="loadBtn">Load</button> -->
+                <button id="logout-btn">Logout</button>
             </div>
-
-            <h2>Include Sections</h2>
-            <div class="section-grid">
-
-                <div class="section-card">
-                    <label><input type="checkbox" value="performance" class="section-check" checked>Performance</label>
-                    <p>TTFB, LCP, CLS, top pages by performance.</p>
-                </div>
-
-                <div class="section-card">
-                    <label><input type="checkbox" value="errors" class="section-check" checked>Errors</label>
-                    <p>Top error messages and error trends over time.</p>
-                </div>
-
-                <div class="section-card">
-                    <label><input type="checkbox" value="pageviews" class="section-check" checked>Pageviews</label>
-                    <p>Traffic summaries and most visited pages.</p>
-                </div>
-
-                <div class="section-card">
-                    <label><input type="checkbox" value="sessions" class="section-check" checked>Sessions</label>
-                    <p>Session count, duration, bounce rate, pages/sessions</p>
-                </div>
-
-                <div class="section-card">
-                    <label><input type="checkbox" value="events" class="section-check" checked>Events</label>
-                    <p>Top event types and event activity trend.</p>
-                </div>
-            </div>
+            <!-- <button id="logout-btn">Logout</button> -->
         </div>
+        <div class="container">
+            <div id="errorBox" class="error-msg"></div>
+            <div id="successBox" class="success-msg"></div>
 
-        <div class="panel">
-            <h2>Analyst Comments</h2>
+            <div class="panel">
+                <h2>Built Report</h2>
 
-            <div class="field">
-                <label for="performanceComment">Performance Comment</label>
-                <textarea id="performanceComment"></textarea>
+                <div class="controls-row">
+                    <div class="field">
+                        <label for="reportTitle">Report Title</label>
+                        <input type="text" id="reportTitle" placeholder="March Site Health Report">
+                    </div>
+
+                    <div class="field">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="field">
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+
+                <h2>Include Sections</h2>
+                <div class="section-grid">
+
+                    <div class="section-card">
+                        <label><input type="checkbox" value="performance" class="section-check" checked>Performance</label>
+                        <p>TTFB, LCP, CLS, top pages by performance.</p>
+                    </div>
+
+                    <div class="section-card">
+                        <label><input type="checkbox" value="errors" class="section-check" checked>Errors</label>
+                        <p>Top error messages and error trends over time.</p>
+                    </div>
+
+                    <div class="section-card">
+                        <label><input type="checkbox" value="pageviews" class="section-check" checked>Pageviews</label>
+                        <p>Traffic summaries and most visited pages.</p>
+                    </div>
+
+                    <div class="section-card">
+                        <label><input type="checkbox" value="sessions" class="section-check" checked>Sessions</label>
+                        <p>Session count, duration, bounce rate, pages/sessions</p>
+                    </div>
+
+                    <div class="section-card">
+                        <label><input type="checkbox" value="events" class="section-check" checked>Events</label>
+                        <p>Top event types and event activity trend.</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="field" style="margin-top:16px;">
-                <label for="errorsComment">Errors Comment</label>
-                <textarea id="errorsComment"></textarea>
+            <div class="panel">
+                <h2>Analyst Comments</h2>
+
+                <div class="field">
+                    <label for="performanceComment">Performance Comment</label>
+                    <textarea id="performanceComment"></textarea>
+                </div>
+
+                <div class="field" style="margin-top:16px;">
+                    <label for="errorsComment">Errors Comment</label>
+                    <textarea id="errorsComment"></textarea>
+                </div>
+
+                <div class="field" style="margin-top:16px;">
+                    <label for="pageviewsComment">Pageviews Comment</label>
+                    <textarea id="pageviewsComment"></textarea>
+                </div>
+
+                <div class="field" style="margin-top:16px;">
+                    <label for="sessionsComment">Sessions Comment</label>
+                    <textarea id="sessionsComment"></textarea>
+                </div>
+
+                <div class="field" style="margin-top:16px;">
+                    <label for="eventsComment">Events Comment</label>
+                    <textarea id="eventsComment"></textarea>
+                </div>
+
+                <div class="button-row">
+                    <button id="preview-button">Preview Report</button>
+                    <button id="save-html-button">Create Static Report</button>
+                    <button id="export-pdf-button">Export PDF</button>
+                </div>
             </div>
 
-            <div class="field" style="margin-top:16px;">
-                <label for="pageviewsComment">Pageviews Comment</label>
-                <textarea id="pageviewsComment"></textarea>
-            </div>
-
-            <div class="field" style="margin-top:16px;">
-                <label for="sessionsComment">Sessions Comment</label>
-                <textarea id="sessionsComment"></textarea>
-            </div>
-
-            <div class="field" style="margin-top:16px;">
-                <label for="eventsComment">Events Comment</label>
-                <textarea id="eventsComment"></textarea>
-            </div>
-
-            <div class="button-row">
-                <button id="preview-button">Preview Report</button>
-                <button id="save-html-button">Create Static Report</button>
-                <button id="export-pdf-button">Export PDF</button>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>Preview</h2>
-            <div id="preview-area">
-                <div class="preview-card">
-                    <h3>No preview yet</h3>
-                    <p>Select sections and click "Preview Report".</p>
+            <div class="panel">
+                <h2>Preview</h2>
+                <div id="preview-area">
+                    <div class="preview-card">
+                        <h3>No preview yet</h3>
+                        <p>Select sections and click "Preview Report".</p>
+                    </div>
                 </div>
             </div>
         </div>

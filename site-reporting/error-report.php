@@ -174,50 +174,78 @@ if($_SESSION['user']['role'] === 'viewer'){
             th, td { padding: 8px 6px; }
             canvas { height: 180px; }
         }
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Error Report</h1>
-        <div class="date-controls">
-            <label for="startDate">From</label>
-            <input type="date" id="startDate">
-            <label for="endDate">To</label>
-            <input type="date" id="endDate">
-            <button id="loadBtn">Load</button>
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
         </div>
-    </div>
+    </noscript>
 
-    <div class="container">
-        <div id="errorBox" class="error-msg"></div>
-
-        <div class="summary-card">
-            <div class="label">Total Errors</div>
-            <div class="value" id="totalErrors">&mdash;</div>
+    <div class="js-app">
+        <div class="header">
+            <h1>Error Report</h1>
+            <div class="date-controls">
+                <label for="startDate">From</label>
+                <input type="date" id="startDate">
+                <label for="endDate">To</label>
+                <input type="date" id="endDate">
+                <button id="loadBtn">Load</button>
+            </div>
         </div>
 
-        <div class="panel">
-            <h2>Errors Per Day</h2>
-            <canvas id="trendChart" width="950" height="220"></canvas>
-        </div>
+        <div class="container">
+            <div id="errorBox" class="error-msg"></div>
 
-        <div class="panel">
-            <h2>Error Frequency</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Error Message</th>
-                            <th>Occurrences</th>
-                            <th>Last Seen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="errorBody">
-                        <tr>
-                            <td colspan="3" class="empty-state">Loading error data...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="summary-card">
+                <div class="label">Total Errors</div>
+                <div class="value" id="totalErrors">&mdash;</div>
+            </div>
+
+            <div class="panel">
+                <h2>Errors Per Day</h2>
+                <canvas id="trendChart" width="950" height="220"></canvas>
+            </div>
+
+            <div class="panel">
+                <h2>Error Frequency</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Error Message</th>
+                                <th>Occurrences</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="errorBody">
+                            <tr>
+                                <td colspan="3" class="empty-state">Loading error data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

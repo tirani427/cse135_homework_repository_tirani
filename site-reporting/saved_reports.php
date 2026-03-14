@@ -300,62 +300,79 @@ if (!isset($_SESSION['user'])) {
                 height: 92vh;
             }
         }
+
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Saved Reports</h1>
-        <div class="header-actions">
-            <a href="/reports.php">Build Report</a>
-            <button id="logout-btn">Logout</button>
-        </div>
-    </div>
-
-    <div class="container">
-        <div id="errorBox" class="error-msg"></div>
-        <div id="successBox" class="success-msg"></div>
-
-        <div class="panel">
-            <h2>Report Library</h2>
-
-            <div class="toolbar">
-                <input type="text" id="searchInput" placeholder="Search report title or creator">
-                <select id="typeFilter">
-                    <option value="">All Types</option>
-                    <option value="custom">Custom</option>
-                </select>
-            </div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Report</th>
-                            <th>Created By</th>
-                            <th>Type</th>
-                            <th>Date Range</th>
-                            <th>Created At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsBody">
-                        <tr>
-                            <td colspan="6" class="empty-state">Loading saved reports...</td>
-                        </tr>
-                    </tbody>
-                </table>
+    <div class="js-app">
+        <div class="header">
+            <h1>Saved Reports</h1>
+            <div class="header-actions">
+                <a href="/reports.php">Build Report</a>
+                <button id="logout-btn">Logout</button>
             </div>
         </div>
-    </div>
 
-    <div id="reportModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Saved Report Preview</h3>
-                <button id="closeModal" class="modal-close">Close</button>
+        <div class="container">
+            <div id="errorBox" class="error-msg"></div>
+            <div id="successBox" class="success-msg"></div>
+
+            <div class="panel">
+                <h2>Report Library</h2>
+
+                <div class="toolbar">
+                    <input type="text" id="searchInput" placeholder="Search report title or creator">
+                    <select id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Report</th>
+                                <th>Created By</th>
+                                <th>Type</th>
+                                <th>Date Range</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">Loading saved reports...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="modal-body">
-                <iframe id="reportFrame" src="" title="Saved Report"></iframe>
+        </div>
+
+        <div id="reportModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Saved Report Preview</h3>
+                    <button id="closeModal" class="modal-close">Close</button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="reportFrame" src="" title="Saved Report"></iframe>
+                </div>
             </div>
         </div>
     </div>

@@ -77,33 +77,62 @@ if($_SESSION['user']['role'] === 'viewer'){
                 overflow-y: auto;
                 max-height: 500px;
             }
+            .noscript-warning {
+                max-width: 900px;
+                margin: 24px auto;
+                padding: 20px 24px;
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                border-radius: 8px;
+                color: #664d03;
+            }
+
+            .noscript-warning h2 {
+                font-size: 1.1em;
+                margin-bottom: 8px;
+            }
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>Pageviews Report</h1>
-        </div>
 
-        <div class="container">
-            <div id="errorBox" class="error-msg"></div>
+        <noscript>
+            <style>
+                .js-app { display: none; }
+            </style>
+            <div class="noscript-warning">
+                <h2>JavaScript is turned off</h2>
+                <p>This page requires JavaScript to load report data and charts.</p>
+                <p>Please enable JavaScript and refresh the page.</p>
+                <p>Saved static report pages can still be viewed directly without JavaScript.</p>
+            </div>
+        </noscript>
 
-            <div class="panel">
-                <div class="controls">
-                    <label for="startDate">From</label>
-                    <input type="date" id="startDate">
+        <div class="js-app">
+            <div class="header">
+                <h1>Pageviews Report</h1>
+            </div>
 
-                    <label for="endDate">To</label>
-                    <input type="date" id="endDate">
+            <div class="container">
+                <div id="errorBox" class="error-msg"></div>
 
-                    <label for="numberPages">Number of Pages:</label>
-                    <input type="number" id="numberPages" value="6" min="2" max="20">
+                <div class="panel">
+                    <div class="controls">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
 
-                    <button id="loadBtn">Load</button>
-                </div>
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
 
-                <h2>Most Visited Pages</h2>
-                <div class="chart-container">
-                    <canvas id="topPagesChart" width="700px" height="700px"></canvas>
+                        <label for="numberPages">Number of Pages:</label>
+                        <input type="number" id="numberPages" value="6" min="2" max="20">
+
+                        <button id="loadBtn">Load</button>
+                    </div>
+
+                    <h2>Most Visited Pages</h2>
+                    <div class="chart-container">
+                        <canvas id="topPagesChart" width="700px" height="700px"></canvas>
+                    </div>
                 </div>
             </div>
         </div>

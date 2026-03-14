@@ -172,61 +172,89 @@ if($_SESSION['user']['role'] === 'viewer'){
             table { font-size: 0.85em; }
             th, td { padding: 8px 6px; }
         }
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Performance Report</h1>
-        <div class="date-controls">
-            <label for="startDate">From</label>
-            <input type="date" id="startDate">
-            <label for="endDate">To</label>
-            <input type="date" id="endDate">
-            <button id="loadBtn">Load</button>
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
         </div>
-    </div>
+    </noscript>
 
-    <div class="container">
-        <div id="errorBox" class="error-msg"></div>
-
-        <div class="cards">
-            <div class="card" id="lcpCard" style="background: #ccc;">
-                <div class="label">LCP (p75)</div>
-                <div class="value" id="lcpValue">&mdash;</div>
-                <div class="rating" id="lcpRating">Loading...</div>
-            </div>
-            <div class="card" id="clsCard" style="background: #ccc;">
-                <div class="label">CLS (p75)</div>
-                <div class="value" id="clsValue">&mdash;</div>
-                <div class="rating" id="clsRating">Loading...</div>
-            </div>
-            <div class="card" id="inpCard" style="background: #ccc;">
-                <div class="label">INP (p75)</div>
-                <div class="value" id="inpValue">&mdash;</div>
-                <div class="rating" id="inpRating">Loading...</div>
+    <div class="js-app">
+        <div class="header">
+            <h1>Performance Report</h1>
+            <div class="date-controls">
+                <label for="startDate">From</label>
+                <input type="date" id="startDate">
+                <label for="endDate">To</label>
+                <input type="date" id="endDate">
+                <button id="loadBtn">Load</button>
             </div>
         </div>
 
-        <div class="panel">
-            <h2>Per-Page Performance</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>URL</th>
-                            <th>Avg Load (ms)</th>
-                            <th>Avg TTFB (ms)</th>
-                            <th>Avg LCP (ms)</th>
-                            <th>Avg CLS</th>
-                            <th>Samples</th>
-                        </tr>
-                    </thead>
-                    <tbody id="perfBody">
-                        <tr>
-                            <td colspan="6" class="empty-state">Loading performance data...</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="container">
+            <div id="errorBox" class="error-msg"></div>
+
+            <div class="cards">
+                <div class="card" id="lcpCard" style="background: #ccc;">
+                    <div class="label">LCP (p75)</div>
+                    <div class="value" id="lcpValue">&mdash;</div>
+                    <div class="rating" id="lcpRating">Loading...</div>
+                </div>
+                <div class="card" id="clsCard" style="background: #ccc;">
+                    <div class="label">CLS (p75)</div>
+                    <div class="value" id="clsValue">&mdash;</div>
+                    <div class="rating" id="clsRating">Loading...</div>
+                </div>
+                <div class="card" id="inpCard" style="background: #ccc;">
+                    <div class="label">INP (p75)</div>
+                    <div class="value" id="inpValue">&mdash;</div>
+                    <div class="rating" id="inpRating">Loading...</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Per-Page Performance</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Avg Load (ms)</th>
+                                <th>Avg TTFB (ms)</th>
+                                <th>Avg LCP (ms)</th>
+                                <th>Avg CLS</th>
+                                <th>Samples</th>
+                            </tr>
+                        </thead>
+                        <tbody id="perfBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">Loading performance data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

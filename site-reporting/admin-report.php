@@ -212,63 +212,91 @@ if($_SESSION['user']['role'] === 'viewer'){
             padding: 30px;
             color: #888;
         }
+        .noscript-warning {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px 24px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #664d03;
+        }
+
+        .noscript-warning h2 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>User Management</h1>
-        <a href="/index.html">Sign Out</a>
-    </div>
+    <noscript>
+        <style>
+            .js-app { display: none; }
+        </style>
+        <div class="noscript-warning">
+            <h2>JavaScript is turned off</h2>
+            <p>This page requires JavaScript to load report data and charts.</p>
+            <p>Please enable JavaScript and refresh the page.</p>
+            <p>Saved static report pages can still be viewed directly without JavaScript.</p>
+        </div>
+    </noscript>
 
-    <div class="container">
-        <div id="message-area"></div>
-
-        <div class="card">
-            <h2>Users</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Email</th>
-                            <th>Display Name</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-table-body">
-                        <tr><td colspan="4" class="empty-state">Loading users...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <div class="js-app">
+        <div class="header">
+            <h1>User Management</h1>
+            <a href="/index.html">Sign Out</a>
         </div>
 
-        <div class="card">
-            <h2>Add User</h2>
-            <form id="add-user-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="new-email">Email</label>
-                        <input type="email" id="new-email" placeholder="user@example.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-name">Display Name</label>
-                        <input type="text" id="new-name" placeholder="Jane Doe" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">Password</label>
-                        <input type="password" id="new-password" placeholder="Min 8 characters" required>
-                    </div>
-                    <div class="form-group" style="min-width: 110px; flex: 0.5;">
-                        <label for="new-role">Role</label>
-                        <select id="new-role">
-                            <option value="viewer">Viewer</option>
-                            <option value="admin">Admin</option>
-                            <option value="owner">Owner</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-submit">Add User</button>
+        <div class="container">
+            <div id="message-area"></div>
+
+            <div class="card">
+                <h2>Users</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Display Name</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body">
+                            <tr><td colspan="4" class="empty-state">Loading users...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
+
+            <div class="card">
+                <h2>Add User</h2>
+                <form id="add-user-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="new-email">Email</label>
+                            <input type="email" id="new-email" placeholder="user@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-name">Display Name</label>
+                            <input type="text" id="new-name" placeholder="Jane Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">Password</label>
+                            <input type="password" id="new-password" placeholder="Min 8 characters" required>
+                        </div>
+                        <div class="form-group" style="min-width: 110px; flex: 0.5;">
+                            <label for="new-role">Role</label>
+                            <select id="new-role">
+                                <option value="viewer">Viewer</option>
+                                <option value="admin">Admin</option>
+                                <option value="owner">Owner</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit">Add User</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
