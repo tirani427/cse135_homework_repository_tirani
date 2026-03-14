@@ -180,15 +180,15 @@ if(!isset($_SESSION['user'])){
 <body>
     <div class="header">
         <h1>Reports Builder</h1>
-        <!-- <div class="date-controls">
-            <label for="startDate">From</label>
+        <div class="date-controls">
+            <!-- <label for="startDate">From</label>
             <input type="date" id="startDate">
             <label for="endDate">To</label>
             <input type="date" id="endDate">
-            <button id="loadBtn">Load</button>
+            <button id="loadBtn">Load</button> -->
             <button id="logout-btn">Logout</button>
-        </div> -->
-        <button id="logout-btn">Logout</button>
+        </div>
+        <!-- <button id="logout-btn">Logout</button> -->
     </div>
     <div class="container">
         <div id="errorBox" class="error-msg"></div>
