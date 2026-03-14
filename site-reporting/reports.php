@@ -353,6 +353,24 @@ if(!isset($_SESSION['user'])){
                 });
 
                 // ADD IN CHECKS FOR ERRORS FROM RESP
+                if(resp.status == 400){
+                        window.location.href = "/400.html";
+                        return;
+                }
+                if(resp.status === 401) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                if(resp.status === 403){
+                    window.location.href= "/403.html";
+                    return;
+                }
+
+                if(resp.status === 500){
+                    window.location.href = "/500.html";
+                    return;
+                }
 
                 const json = await resp.json();
 
