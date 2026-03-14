@@ -143,21 +143,19 @@ if($_SESSION['user']['role'] === 'viewer'){
         }
     </style>
 </head>
-<body>
+<body>    
+    <nav class="sidebar">
+        <h2>Analytics</h2>
+        <a href="/dashboard.php" class="active">Overview</a>
+        <a href="/speed-reporting.php">Performance</a>
+        <a href="/error-report.php">Errors</a>
+        <a href="/admin-report.php">Admin</a>
+        <a href="/pageviews.php">Pageviews</a>
+        <a href="/events.php">Events</a>
+        <a href="/reports.php">Reports</a>
+        <a href="/saved_reports.php">Saved Reports</a>
+    </nav>
     <div class="js-app">
-        
-        <nav class="sidebar">
-            <h2>Analytics</h2>
-            <a href="/dashboard.php" class="active">Overview</a>
-            <a href="/speed-reporting.php">Performance</a>
-            <a href="/error-report.php">Errors</a>
-            <a href="/admin-report.php">Admin</a>
-            <a href="/pageviews.php">Pageviews</a>
-            <a href="/events.php">Events</a>
-            <a href="/reports.php">Reports</a>
-            <a href="/saved_reports.php">Saved Reports</a>
-        </nav>
-
         <main class="main">
             <div class="topbar">
                 <div class="filters">
