@@ -100,11 +100,15 @@ if($_SESSION['user']['role'] == 'viewer'){
             line-height: 1.2;
         }
         .panel {
+            display:flex;
+            flex-direction: column;
+            gap: 10px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 24px;
             margin-bottom: 24px;
+            
         }
         .panel h2 {
             color: #2E86C1;
