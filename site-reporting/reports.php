@@ -205,6 +205,16 @@ if($_SESSION['user']['role'] == 'viewer'){
         .commentText{
             width: inherit;
         }
+        .button-row button{
+            padding: 6px 16px;
+            background: white;
+            color: #2E86C1;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
