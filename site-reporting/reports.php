@@ -12,7 +12,7 @@ if(!isset($_SESSION['user'])){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Report - Analytics Dashboard</title>
+    <title>Reports Builder - Analytics Dashboard</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -171,17 +171,242 @@ if(!isset($_SESSION['user'])){
 </head>
 <body>
     <div class="header">
-        <h1>Reports</h1>
-        <div class="date-controls">
+        <h1>Reports Builder</h1>
+        <!-- <div class="date-controls">
             <label for="startDate">From</label>
             <input type="date" id="startDate">
             <label for="endDate">To</label>
             <input type="date" id="endDate">
             <button id="loadBtn">Load</button>
             <button id="logout-btn">Logout</button>
+        </div> -->
+    </div>
+    <div class="container">
+        <div id="errorBox" class="error-msg"></div>
+        <div id="successBox" class="success-msg"></div>
+
+        <div class="panel">
+            <h2>Built Report</h2>
+
+            <div class="controls-row">
+                <div class="field">
+                    <label for="reportTitle">Report Title</label>
+                    <input type="text" id="reportTitle" placeholder="March Site Health Report">
+                </div>
+
+                <div class="field">
+                    <label for="startDate">From</label>
+                    <input type="date" id="startDate">
+                </div>
+
+                <div class="field">
+                    <label for="endDate">To</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+
+            <h2>Include Sections</h2>
+            <div class="section-grid">
+
+                <div class="section-card">
+                    <label><input type="checkbox" value="performance" class="section-check" checked>Performance</label>
+                    <p>TTFB, LCP, CLS, top pages by performance.</p>
+                </div>
+
+                <div class="section-card">
+                    <label><input type="checkbox" value="errors" class="section-check" checked>Errors</label>
+                    <p>Top error messages and error trends over time.</p>
+                </div>
+
+                <div class="section-card">
+                    <label><input type="checkbox" value="pageviews" class="section-check" checked>Pageviews</label>
+                    <p>Traffic summaries and most visited pages.</p>
+                </div>
+
+                <div class="section-card">
+                    <label><input type="checkbox" value="sessions" class="section-check" checked>Sessions</label>
+                    <p>Session count, duration, bounce rate, pages/sessions</p>
+                </div>
+
+                <div class="section-card">
+                    <label><input type="checkbox" value="events" class="section-check" checked>Events</label>
+                    <p>Top event types and event activity trend.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Analyst Comments</h2>
+
+            <div class="field">
+                <lavel for="performanceComment">Performance Comment</label>
+                <textarea id="performanceComment"></textarea>
+            </div>
+
+            <div class="field" style="margin-top:16px;">
+                <lavel for="errorsComment">Errors Comment</label>
+                <textarea id="errorsComment"></textarea>
+            </div>
+
+            <div class="field" style="margin-top:16px;">
+                <lavel for="pageviewsComment">Pageviews Comment</label>
+                <textarea id="pageviewsComment"></textarea>
+            </div>
+
+            <div class="field" style="margin-top:16px;">
+                <lavel for="sessionsComment">Sessions Comment</label>
+                <textarea id="sessionsComment"></textarea>
+            </div>
+
+            <div class="field" style="margin-top:16px;">
+                <lavel for="eventsComment">Events Comment</label>
+                <textarea id="eventsComment"></textarea>
+            </div>
+
+            <div class="button-row">
+                <button id="preview-button">Preview Report</button>
+                <button id="save-html-button">Create Static Report</button>
+                <button id="export-pdf-button">Export PDF</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Preview</h2>
+            <div id="preview-area">
+                <div class="preview-card">
+                    <h3>No preview yet</h3>
+                    <p>Select sections and click "Preview Report".</p>
+                </div>
+            </div>
         </div>
     </div>
+
     <script>
+    (function () {
+        const today = new Date();
+        const thirtyAgo = new Date(Date.now() - 30 * 86400000);
+
+        document.getElementById('startDate').value = formatDate(thirtyAgo);
+        document.getElementById('endDate').value = formatDate(today);
+
+        document.getElementById('preview-button').addEventListener('click', () => submitReport('preview'));
+        document.getElementById('save-html-button').addEventListener('click', () => submitReport('html'));
+        document.getElementById('export-pdf-button').addEventListener('click', () => submitReport('pdf'));
+
+        function formatDate(d){
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        function showError(msg){
+            const box = document.getElementById('errorBox');
+            box.textContent = msg;
+            box.style.display = 'block';
+            document.getElementById('successBox').style.display = 'none';
+        }
+
+        function showSuccess(msg){
+            const box = document.getElementById('successBox');
+            box.textContent = msg;
+            box.style.display = 'block';
+            document.getElementById('errorBox').style.display = 'none';
+        }
+
+        function getSelectedSections() {
+            return Array.from(document.querySelectorAll('.section-check:checked')).map(input => input.value);
+        }
+
+        function buildPayload(format){
+            return{
+                title: document.getElementById('reportTitle').value.trim() || 'Untitled Report',
+                start: document.getElementById('startDate').value,
+                end: document.getElementById('endDate').value,
+                sections: getSelectedSections(),
+                comments: {
+                    performance: document.getElementById('performanceComment').value.trim(),
+                    errors: document.getElementById('errorsComment').value.trim(),
+                    pageviews: document.getElementById('pageviewsComment').value.trim(),
+                    sessions: document.getElementById('sessionsComment').value.trim(),
+                    events: document.getElementById('eventsComment').value.trim()
+                },
+                format: format
+            };
+        }
+
+        async function submitReport(format){
+            const payload = buildPayload(format);
+
+            if(!payload.start || !payload.end){
+                showError("Please choose both a start and end date.");
+                return;
+            }
+            if(payload.sections.length === 0){
+                showError("Please select at least one report section");
+                return;
+            }
+
+            try{
+                const resp = await fetch('/api/index.php/exports',{
+                    method: 'POST',
+                    headers: {'Content-Type' : 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                // ADD IN CHECKS FOR ERRORS FROM RESP
+
+                const json = await resp.json();
+
+                if(!json.success){
+                    showError(json.error || 'Failed to generate report.');
+                    return;
+                }
+
+                if(format === 'preview'){
+                    renderPreview(json.data.snapshot);
+                    showSuccess('Preview updated');
+                } else if(format === 'html'){
+                    showSuccess('Static report created: ' + json.data.url);
+                    renderPreview(json.data.snapshot);
+                } else if(format === 'pdf'){
+                    showSuccess('PDF export created.');
+                    renderPreview(json.data.snapshot);
+                    if(json.data.url){
+                        window.open(json.data.url, '_blank');
+                    }
+                }
+            } catch (err) {
+                showError('Could not reach export API.');
+            }
+        }
+
+        function renderPreview(snapshot){
+            const preview = document.getElementById('previewArea');
+            preview.innerHTML = '';
+
+            const sections = snapshot.sections || {};
+
+            Object.keys(sections).forEach(name => {
+                const card = document.createElement('div');
+                card.className = 'preview-card';
+
+                const h3 = document.createElement('h3');
+                h3.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                card.appendChild(h3);
+
+                const meta = document.createElement('div');
+                meta.className = 'preview-meta';
+                meta.textContent = snapshot.title + ' | ' + snapshot.start + ' to ' + snapshot.end;
+                card.appendChild(meta);
+
+                const pre = document.createElement('pre');
+                pre.style.whiteSpace = 'pre-wrap';
+                pre.style.fontFamily = 'inherit';
+                pre.textContent = JSON.stringify(sections[name], null, 2);
+                card.appendChild(pre);
+
+                preview.appendChild(card);
+            });
+        }
 
         document.addEventListener('click', e => {
             if (e.target.id === 'logout-btn') {
@@ -189,6 +414,8 @@ if(!isset($_SESSION['user'])){
                     .then(() => { window.location.href = '/index.html'; });
             }
         });
+
+    })();
     </script>
 
 </body>

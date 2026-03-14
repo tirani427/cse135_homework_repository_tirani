@@ -138,6 +138,7 @@ if($_SESSION['user']['role'] === 'viewer'){
         <a href="/admin-report.php">Admin</a>
         <a href="/pageviews.php">Pageviews</a>
         <a href="/events.php">Events</a>
+        <a href="/reports.php">Reports</a>
     </nav>
 
     <main class="main">

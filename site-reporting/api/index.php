@@ -200,6 +200,269 @@ if($method === 'GET' && $route === 'dashboard'){
 }
 
 // ------------------------------------------------
+// EXPORTS 
+// ------------------------------------------------
+
+if($method === 'POST' && $route === 'exports'){
+    requireAuth();
+    requirePermissions(['super admin', 'analyst'], ['reports']);
+
+    $body = read_json_body();
+
+    if($body === null){
+        json_response([
+            'success' => false,
+            'error' => 'Invalid JSON body'
+        ], 400);
+    }
+
+    $title = trim($body['title'] ?? 'Untitled Report');
+    $start = trim($body['start'] ?? '');
+    $end = trim($body['end'] ?? '');
+    $sections = $body['sections'] ?? [];
+    $comments = $body['comments'] ?? [];
+    $format = $body['format'] ?? 'preview';
+
+    if($start === '' || $end === ''){
+        json_response([
+            'success' => false,
+            'error' => 'Missing date range'
+        ], 400);
+    }
+
+    if(!is_array($sections) || count($sections) === 0){
+        json_response([
+            'success' => false,
+            'error' => 'No report sections selected'
+        ], 400);
+    }
+
+    $allowedSections = ['performance', 'errors', 'pageviews', 'sessions', 'events'];
+    foreach($sections as $section){
+        if(!in_array($section, $allowedSections, true)){
+            json_response([
+                'success' => false,
+                'error' => 'Invalid report section'
+            ], 400);
+        }
+    }
+
+    $snapshot = [
+        'title' => $title,
+        'start' => $start,
+        'end' => $end,
+        'sections' => []
+    ];
+
+    $startTs = $start . '00:00:00';
+    $endDate = $end;
+
+    if(in_array('performance', $sections, true)){
+        //requirePermissions(['super admin', 'analyst'], ['performance']);
+
+        $stmt = $pdo->prepare("
+            SELECT
+                url,
+                COUNT(*) AS samples,
+                ROUND(AVG(load_time), 2) AS avg_load_time,
+                ROUND(AVG(ttfb), 2) AS avg_ttfb,
+                ROUND(AVG(lcp, 2) AS avg_lcp,
+                ROUND(AVG(cls, 4) AS avg_cls
+            FROM performance
+            WHERE server_timestamp >= :start
+            AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
+            GROUP BY url
+            ORDER BY avg_load_time DESC
+            LIMIT 10
+        ");
+        $stmt->execute([
+            ':start' => $startTs,
+            ":end" => $endDate
+        ]);
+
+        $snapshot['sections']['performance'] = [
+            'comment' => $comments['performance'] ?? '',
+            'byPage' => $stmt->fetchAll()
+        ];
+    }
+
+    if(in_array('errors', $sections, true)){
+
+        $stmt = $pdo->prepare("
+            SELECT
+                error_message,
+                COUNT(*) AS occurrences,
+                MAX(server_timestamp) AS last_seen
+            FROM errors
+            WHERE server_timestamp >= :start
+            AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
+            GROUP BY error_message
+            ORDER BY occurrences DESC, last_seen DESC
+            LIMIT 10
+        ");
+        $stmt->execute([
+            ":start" => $startTs,
+            ":end" => $endDate
+        ]);
+
+        $snapshot['sections']['errors'] = [
+            'comment' => $comments['errors'] ?? '',
+            'topErrors' => $stmt->fetchAll()
+        ];
+    }
+
+    if(in_array('pageviews', $sections, true)){
+
+        $stmt = $pdo->prepare("
+            SELECT
+                url,
+                COUNT(*) AS views,
+            FROM pageviews
+            WHERE server_timestamp >= :start
+            AND server_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
+            AND type= 'pageview'
+            GROUP BY url
+            ORDER BY views DESC
+            LIMIT 10
+        ");
+        $stmt->execute([
+            ":start" => $startTs,
+            ":end" => $endDate
+        ]);
+
+        $snapshot['sections']['pageviews'] = [
+            'comment' => $comments['pageviews'] ?? '',
+            'topPages' => $stmt->fetchAll()
+        ];
+    }
+
+    if(in_array('sessions', $sections, true)){
+
+        $stmt = $pdo->prepare("
+            SELECT
+                ROUND(AVG(duration_secconds), 2) AS avg_session_duration,
+                ROUND(AVG(page_count), 2) AS avg_pages_per_session,
+                ROUND(
+                    100.0 * SUM(CASE WHEN page_count = 1 THEN 1 ELSE 0 END) / COUNT(*),
+                    2
+                ) AS bounce_rate
+            FROM sessions
+            WHERE start_time >= :start
+            AND start_time < DATE_ADD(:end, INTERVAL 1 DAY)
+        ");
+        $stmt->execute([
+            ":start" => $startTs,
+            ":end" => $endDate
+        ]);
+
+        $snapshot['sections']['sessions'] = [
+            'comment' => $comments['sessions'] ?? '',
+            'stats' => $stmt->fetchAll()
+        ];
+    }
+
+    if(in_array('events', $sections, true)){
+
+        $stmt = $pdo->prepare("
+            SELECT
+                event_name,
+                COUNT(*) AS occurrences,
+                MAX(server_timestamp) AS last_seen
+            FROM events
+            WHERE server_timestamp >= :start
+            AND sever_timestamp < DATE_ADD(:end, INTERVAL 1 DAY)
+            GROUP BY event_name
+            ORDER BY occurrences DESC
+            LIMIT 10
+        ");
+        $stmt->execute([
+            ":start" => $startTs,
+            ":end" => $endDate
+        ]);
+
+        $snapshot['sections']['events'] = [
+            'comment' => $comments['events'] ?? '',
+            'topEvents' => $stmt->fetchAll()
+        ];
+    }
+
+    if($format === 'preview'){
+        json_response([
+            'success' => true,
+            'data' => [
+                'snapshot' => $snapshot
+            ]
+        ], 200);
+    }
+
+    $token = bin2hex(random_bytes(16));
+
+    $insert = $pdo->prepare("
+        INSERT INTO saved_reports (
+            title,
+            created_by,
+            report_type,
+            start_date,
+            end_date,
+            sections,
+            snapshot,
+            is_public,
+            share_token
+        ) VALUES (
+            :title,
+            :created_by,
+            'custom',
+            :start_date,
+            :end_date,
+            CAST(:sections AS JSON),
+            CAST(:snapshot AS JSON),
+            1,
+            :share_token
+        )
+    ");
+
+    $insert->execute([
+        ':title' => $title,
+        ':created_by' => $_SESSION['user']['id'] ?? null,
+        ':start_date' => $start,
+        ':end_date' => $end,
+        ':sections' => json_encode($sections, JSON_UNESCAPED_SLASHES),
+        ':snapshot' => json_encode($snapshot, JSON_UNESCAPED_SLASHES),
+        ':share_token' => $token
+    ]);
+
+    $reportId = (int)$pdo->lastInsertId();
+    $url = '/report-view.php?token=' . urlencode($token);
+
+    if($format === 'html'){
+        json_response([
+            'success' => true,
+            'data' => [
+                'id' => $reportId,
+                'url' => $url,
+                'snapshot' => $snapshot
+            ]
+        ], 201);
+    }
+
+    if($format === 'pdf'){
+        json_response([
+            'success' => true,
+            'data' => [
+                'id' => $reportId,
+                'url' => $url,
+                'snapshot' => $snapshot
+            ]
+        ], 201);
+    }
+
+    json_response([
+        'success' => false,
+        'error' => 'Unsupported export format'
+    ], 400);
+}
+
+// ------------------------------------------------
 // EVENTS 
 // ------------------------------------------------
 
