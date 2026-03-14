@@ -6,26 +6,6 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 
-require_once __DIR__ . '/api/db.php';
-
-$stmt = $pdo->prepare("
-    SELECT
-        sr.id,
-        sr.title,
-        sr.start_date,
-        sr.end_date,
-        sr.created_at,
-        sr.share_token,
-        u.display_name
-    FROM saved_reports sr
-    LEFT JOIN users u
-        ON sr.created_by = u.id
-    ORDER BY sr.created_at DESC
-");
-
-$stmt->execute();
-$reports = $stmt->fetchAll();
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
