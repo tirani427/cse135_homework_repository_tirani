@@ -196,6 +196,15 @@ if($_SESSION['user']['role'] == 'viewer'){
             font-size: 1.1em;
             margin-bottom: 8px;
         }
+
+        .field{
+            display:flex;
+            flex-direction: column;
+            width: inherit;
+        }
+        .commentText{
+            width: inherit;
+        }
     </style>
 </head>
 <body>
@@ -283,27 +292,27 @@ if($_SESSION['user']['role'] == 'viewer'){
 
                 <div class="field">
                     <label for="performanceComment">Performance Comment</label>
-                    <textarea id="performanceComment"></textarea>
+                    <textarea class='commentText' id="performanceComment"></textarea>
                 </div>
 
                 <div class="field" style="margin-top:16px;">
                     <label for="errorsComment">Errors Comment</label>
-                    <textarea id="errorsComment"></textarea>
+                    <textarea class='commentText' id="errorsComment"></textarea>
                 </div>
 
                 <div class="field" style="margin-top:16px;">
                     <label for="pageviewsComment">Pageviews Comment</label>
-                    <textarea id="pageviewsComment"></textarea>
+                    <textarea class='commentText' id="pageviewsComment"></textarea>
                 </div>
 
                 <div class="field" style="margin-top:16px;">
                     <label for="sessionsComment">Sessions Comment</label>
-                    <textarea id="sessionsComment"></textarea>
+                    <textarea class='commentText' id="sessionsComment"></textarea>
                 </div>
 
                 <div class="field" style="margin-top:16px;">
                     <label for="eventsComment">Events Comment</label>
-                    <textarea id="eventsComment"></textarea>
+                    <textarea class='commentText' id="eventsComment"></textarea>
                 </div>
 
                 <div class="button-row">
