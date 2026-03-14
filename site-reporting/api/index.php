@@ -175,7 +175,7 @@ if($method === 'POST' && $route === 'logout'){
 if($method === 'GET' && $route === 'dashboard'){
     requireAuth();
 
-    requirePermissions(['super admin', 'analyst', 'viewer'], ['reports']);
+    requirePermissions(['super admin', 'analyst'], ['reports']);
 
     $start = ($_GET["start"] ?? date("Y-m-01")) . " 00:00:00";
     $end = ($_GET["end"] ?? date("Y-m-d")) . " 23:59:59";
