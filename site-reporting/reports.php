@@ -167,6 +167,14 @@ if(!isset($_SESSION['user'])){
             th, td { padding: 8px 6px; }
             canvas { height: 180px; }
         }
+        .success-msg {
+            background: #d1e7dd;
+            border-left: 4px solid #198754;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -180,6 +188,7 @@ if(!isset($_SESSION['user'])){
             <button id="loadBtn">Load</button>
             <button id="logout-btn">Logout</button>
         </div> -->
+        <button id="logout-btn">Logout</button>
     </div>
     <div class="container">
         <div id="errorBox" class="error-msg"></div>
@@ -239,27 +248,27 @@ if(!isset($_SESSION['user'])){
             <h2>Analyst Comments</h2>
 
             <div class="field">
-                <lavel for="performanceComment">Performance Comment</label>
+                <label for="performanceComment">Performance Comment</label>
                 <textarea id="performanceComment"></textarea>
             </div>
 
             <div class="field" style="margin-top:16px;">
-                <lavel for="errorsComment">Errors Comment</label>
+                <label for="errorsComment">Errors Comment</label>
                 <textarea id="errorsComment"></textarea>
             </div>
 
             <div class="field" style="margin-top:16px;">
-                <lavel for="pageviewsComment">Pageviews Comment</label>
+                <label for="pageviewsComment">Pageviews Comment</label>
                 <textarea id="pageviewsComment"></textarea>
             </div>
 
             <div class="field" style="margin-top:16px;">
-                <lavel for="sessionsComment">Sessions Comment</label>
+                <label for="sessionsComment">Sessions Comment</label>
                 <textarea id="sessionsComment"></textarea>
             </div>
 
             <div class="field" style="margin-top:16px;">
-                <lavel for="eventsComment">Events Comment</label>
+                <label for="eventsComment">Events Comment</label>
                 <textarea id="eventsComment"></textarea>
             </div>
 
@@ -398,7 +407,7 @@ if(!isset($_SESSION['user'])){
         }
 
         function renderPreview(snapshot){
-            const preview = document.getElementById('previewArea');
+            const preview = document.getElementById('preview-area');
             preview.innerHTML = '';
 
             const sections = snapshot.sections || {};
